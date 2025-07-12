@@ -8,6 +8,7 @@ import ink.meodinger.lpfx.type.TransFile
 import ink.meodinger.lpfx.type.TransGroup
 import ink.meodinger.lpfx.util.color.toHexRGB
 import ink.meodinger.lpfx.util.component.withContent
+import ink.meodinger.lpfx.component.dialog.GroupSelectionDialog
 import ink.meodinger.lpfx.component.dialog.showError
 import ink.meodinger.lpfx.type.TransLabel
 import ink.meodinger.lpfx.util.doNothing
@@ -154,17 +155,18 @@ class CTreeMenu(
     private val lMoveToHandler = EventHandler<ActionEvent> { event ->
         @Suppress("UNCHECKED_CAST") val items = event.source as List<CTreeLabelItem>
 
-        val groups = state.transFile.groupList.map(TransGroup::name)
-        val dialog = ChoiceDialog(groups[0], groups).apply {
+        val groups = state.transFile.groupList
+        val dialog = GroupSelectionDialog(
+            groups,
+            I18N["context.move_to.dialog.title"],
+            if (items.size == 1) I18N["context.move_to.dialog.header"]
+            else I18N["context.move_to.dialog.header.pl"]
+        ).apply {
             initOwner(state.stage)
-            title = I18N["context.move_to.dialog.title"]
-            contentText =
-                if (items.size == 1) I18N["context.move_to.dialog.header"]
-                else I18N["context.move_to.dialog.header.pl"]
         }
         val choice = dialog.showAndWait()
         if (!choice.isPresent) return@EventHandler
-        val transGroup = state.transFile.getTransGroup(choice.get())
+        val transGroup = choice.get()
 
         val labelActions = items.map {
             LabelAction(

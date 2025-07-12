@@ -979,19 +979,21 @@ class Controller(private val state: State) {
         
         if (selectedItems.isEmpty()) return false
 
-        val groups = state.transFile.groupList.map(TransGroup::name)
+        val groups = state.transFile.groupList
         if (groups.isEmpty()) return false
         
-        val dialog = ChoiceDialog(groups[0], groups).apply {
+        val dialog = GroupSelectionDialog(
+            groups,
+            I18N["context.move_to.dialog.title"],
+            if (selectedItems.size == 1) I18N["context.move_to.dialog.header"]
+            else I18N["context.move_to.dialog.header.pl"]
+        ).apply {
             initOwner(state.stage)
-            title = I18N["context.move_to.dialog.title"]
-            contentText = if (selectedItems.size == 1) I18N["context.move_to.dialog.header"]
-                         else I18N["context.move_to.dialog.header.pl"]
         }
         val choice = dialog.showAndWait()
         if (!choice.isPresent) return false
         
-        val transGroup = state.transFile.getTransGroup(choice.get())
+        val transGroup = choice.get()
 
         val labelActions = selectedItems.map {
             LabelAction(
