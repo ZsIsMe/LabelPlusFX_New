@@ -3,7 +3,9 @@ package ink.meodinger.lpfx
 import com.fasterxml.jackson.databind.ObjectMapper
 import ink.meodinger.lpfx.action.ActionType
 import ink.meodinger.lpfx.action.ComplexAction
+import ink.meodinger.lpfx.action.FunctionAction
 import ink.meodinger.lpfx.action.LabelAction
+import ink.meodinger.lpfx.action.Action
 import ink.meodinger.lpfx.component.CLabelPane
 import ink.meodinger.lpfx.component.CTreeLabelItem
 import ink.meodinger.lpfx.component.common.CFileChooser
@@ -872,9 +874,204 @@ class Controller(private val state: State) {
         }
         cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, copyLabelHandler)
         Logger.info("Transformed Ctrl + C/V", "Controller")
+
+        // F1-F5 快捷鍵：移動序號/移動分組/複製文本/粘貼文本/刪除
+        val functionKeyHandler = EventHandler<KeyEvent> handler@{
+            when (it.code) {
+                KeyCode.F1 -> {
+                    // F1: 移動序號
+                    if (triggerMoveToIndex()) {
+                        it.consume()
+                    }
+                }
+                KeyCode.F2 -> {
+                    // F2: 移動分組
+                    if (triggerMoveToGroup()) {
+                        it.consume()
+                    }
+                }
+                KeyCode.F3 -> {
+                    // F3: 複製文本
+                    if (triggerCopyLabelText()) {
+                        it.consume()
+                    }
+                }
+                KeyCode.F4 -> {
+                    // F4: 粘貼文本
+                    if (triggerPasteLabelText()) {
+                        it.consume()
+                    }
+                }
+                KeyCode.F5 -> {
+                    // F5: 刪除
+                    if (triggerDeleteLabels()) {
+                        it.consume()
+                    }
+                }
+                else -> return@handler
+            }
+        }
+        cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, functionKeyHandler)
+        cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, functionKeyHandler)
+        cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, functionKeyHandler)
+        Logger.info("Transformed F1-F5", "Controller")
 //
 
 
+    }
+
+    // Helper Functions for Shortcuts
+
+    /**
+     * 觸發移動序號功能 (F1)
+     * @return true if triggered successfully, false otherwise
+     */
+    private fun triggerMoveToIndex(): Boolean {
+        // 檢查是否有開啟的檔案
+        if (!state.isOpened) return false
+        
+        // 獲取選中的標籤項
+        val selectedItems = cTreeView.selectionModel.selectedItems
+            .filterIsInstance<CTreeLabelItem>()
+        
+        if (selectedItems.isEmpty()) return false
+        
+        // 選擇第一個標籤進行移動
+        val item = selectedItems[0]
+        val labels = state.transFile.getTransList(state.currentPicName).map(TransLabel::index)
+        
+        if (labels.isEmpty()) return false
+
+        val dialog = ChoiceDialog(labels[0], labels).apply {
+            initOwner(state.stage)
+            title = I18N["context.move_to_index.dialog.title"]
+            contentText = I18N["context.move_to_index.dialog.header"]
+        }
+        val choice = dialog.showAndWait()
+        if (!choice.isPresent) return false
+
+        val labelAction = LabelAction(
+            ActionType.CHANGE, state,
+            state.currentPicName,
+            state.transFile.getTransLabel(state.currentPicName, item.transLabel.index),
+            newLabelIndex = choice.get()
+        )
+
+        val moveAction = FunctionAction(
+            { labelAction.commit(); requestUpdateTree() },
+            { labelAction.revert(); requestUpdateTree() }
+        )
+        state.doAction(moveAction)
+        return true
+    }
+
+    /**
+     * 觸發移動分組功能 (F2)
+     * @return true if triggered successfully, false otherwise
+     */
+    private fun triggerMoveToGroup(): Boolean {
+        // 檢查是否有開啟的檔案
+        if (!state.isOpened) return false
+        
+        // 獲取選中的標籤項
+        val selectedItems = cTreeView.selectionModel.selectedItems
+            .filterIsInstance<CTreeLabelItem>()
+        
+        if (selectedItems.isEmpty()) return false
+
+        val groups = state.transFile.groupList.map(TransGroup::name)
+        if (groups.isEmpty()) return false
+        
+        val dialog = ChoiceDialog(groups[0], groups).apply {
+            initOwner(state.stage)
+            title = I18N["context.move_to.dialog.title"]
+            contentText = if (selectedItems.size == 1) I18N["context.move_to.dialog.header"]
+                         else I18N["context.move_to.dialog.header.pl"]
+        }
+        val choice = dialog.showAndWait()
+        if (!choice.isPresent) return false
+        
+        val transGroup = state.transFile.getTransGroup(choice.get())
+
+        val labelActions = selectedItems.map {
+            LabelAction(
+                ActionType.CHANGE, state,
+                state.currentPicName,
+                state.transFile.getTransLabel(state.currentPicName, it.transLabel.index),
+                newGroupId = transGroup.index
+            )
+        }
+        val moveAction = FunctionAction(
+            { labelActions.forEach(Action::commit); requestUpdateTree() },
+            { labelActions.forEach(Action::revert); requestUpdateTree() }
+        )
+        state.doAction(moveAction)
+        return true
+    }
+
+    /**
+     * 觸發複製標籤文本功能 (F3)
+     * @return true if triggered successfully, false otherwise
+     */
+    private fun triggerCopyLabelText(): Boolean {
+        // 檢查是否有開啟的檔案
+        if (!state.isOpened) return false
+        
+        // 獲取選中的標籤項
+        val selectedItems = cTreeView.selectionModel.selectedItems
+            .filterIsInstance<CTreeLabelItem>()
+        
+        if (selectedItems.isEmpty()) return false
+        
+        // 選擇第一個標籤進行複製
+        val item = selectedItems[0]
+        cTreeView.copyLabelText(item.transLabel.index)
+        return true
+    }
+
+    /**
+     * 觸發粘貼標籤文本功能 (F4)
+     * @return true if triggered successfully, false otherwise
+     */
+    private fun triggerPasteLabelText(): Boolean {
+        // 檢查是否有開啟的檔案
+        if (!state.isOpened) return false
+        
+        // 獲取選中的標籤項
+        val selectedItems = cTreeView.selectionModel.selectedItems
+            .filterIsInstance<CTreeLabelItem>()
+        
+        if (selectedItems.isEmpty()) return false
+
+        cTreeView.pasteLabelsText(selectedItems.map { it.transLabel.index }, state)
+        return true
+    }
+
+    /**
+     * 觸發刪除標籤功能 (F5)
+     * @return true if triggered successfully, false otherwise
+     */
+    private fun triggerDeleteLabels(): Boolean {
+        // 檢查是否有開啟的檔案
+        if (!state.isOpened) return false
+        
+        // 獲取選中的標籤項
+        val selectedItems = cTreeView.selectionModel.selectedItems
+            .filterIsInstance<CTreeLabelItem>()
+        
+        if (selectedItems.isEmpty()) return false
+
+        // 反序處理以確保索引正確性
+        val reversedItems = selectedItems.reversed()
+
+        state.doAction(ComplexAction(reversedItems.map {
+            LabelAction(
+                ActionType.REMOVE, state,
+                state.currentPicName,
+                state.transFile.getTransLabel(state.currentPicName, it.transLabel.index),
+            )
+        }))
+        return true
     }
 
     // Controller Methods
