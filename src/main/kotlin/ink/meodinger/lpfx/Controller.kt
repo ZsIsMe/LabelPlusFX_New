@@ -91,6 +91,7 @@ class Controller(private val state: State) {
     private val cPicBox         = view.cPicBox
     private val cGroupBox       = view.cGroupBox
     private val cGroupBar       = view.cGroupBar
+    private val cBottomGroupBar = view.cBottomGroupBar
     private val cLabelPane      = view.cLabelPane
     private val cTreeView       = view.cTreeView
     private val cTransArea      = view.cTransArea
@@ -444,6 +445,14 @@ class Controller(private val state: State) {
         cGroupBar.indexProperty().addListener(groupIndexListener)
         state.currentGroupIdProperty().addListener(onNew<Number, Int>(cGroupBar.indexProperty()::set))
         Logger.info("Bound GroupBar & CurrentGroupId", "Controller")
+
+        // BottomGroupBar
+        cBottomGroupBar.groupsProperty().bind(groupsBinding)
+        cBottomGroupBar.setOnGroupMove { event ->
+            val targetGroup = event.source as TransGroup
+            triggerQuickMoveToGroup(targetGroup)
+        }
+        Logger.info("Bound BottomGroupBar & QuickMove", "Controller")
 
         // GroupBox
         cGroupBox.itemsProperty().bind(groupsBinding)
@@ -1001,6 +1010,38 @@ class Controller(private val state: State) {
                 state.currentPicName,
                 state.transFile.getTransLabel(state.currentPicName, it.transLabel.index),
                 newGroupId = transGroup.index
+            )
+        }
+        val moveAction = FunctionAction(
+            { labelActions.forEach(Action::commit); requestUpdateTree() },
+            { labelActions.forEach(Action::revert); requestUpdateTree() }
+        )
+        state.doAction(moveAction)
+        return true
+    }
+
+    /**
+     * 觸發快速移動分組功能 (底部分組按鈕)
+     * @param targetGroup 目標分組
+     * @return true if triggered successfully, false otherwise
+     */
+    private fun triggerQuickMoveToGroup(targetGroup: TransGroup): Boolean {
+        // 檢查是否有開啟的檔案
+        if (!state.isOpened) return false
+        
+        // 獲取選中的標籤項
+        val selectedItems = cTreeView.selectionModel.selectedItems
+            .filterIsInstance<CTreeLabelItem>()
+        
+        if (selectedItems.isEmpty()) return false
+
+        // 直接移動到指定分組，無需對話框選擇
+        val labelActions = selectedItems.map {
+            LabelAction(
+                ActionType.CHANGE, state,
+                state.currentPicName,
+                state.transFile.getTransLabel(state.currentPicName, it.transLabel.index),
+                newGroupId = targetGroup.index
             )
         }
         val moveAction = FunctionAction(

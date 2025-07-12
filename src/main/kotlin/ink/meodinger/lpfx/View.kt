@@ -37,6 +37,7 @@ import javafx.scene.layout.BorderPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.Region
+import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.stage.FileChooser
@@ -109,6 +110,11 @@ class View(private val state: State) : BorderPane() {
      * GroupBar, display TransGroups above the LabelPane
      */
     val cGroupBar: CGroupBar = CGroupBar()
+
+    /**
+     * Bottom GroupBar, display TransGroups for quick move functionality
+     */
+    val cBottomGroupBar: CBottomGroupBar = CBottomGroupBar()
 
     /**
      * LabelPane, display Image & Labels
@@ -355,21 +361,26 @@ class View(private val state: State) : BorderPane() {
                     newPictureScaleProperty().bind(Settings.newPictureScaleProperty())
                     useWheelToScaleProperty().bind(Settings.useWheelToScaleProperty())
                 }
-                bottom(HBox()) {
-                    add(CTextSlider()) {
-                        disableProperty().bind(cLabelPane.disableProperty())
-                        initScaleProperty().bind(cLabelPane.initScaleProperty())
-                        scaleProperty().bindBidirectional(cLabelPane.scaleProperty())
-                        minScaleProperty().bindBidirectional(cLabelPane.minScaleProperty())
-                        maxScaleProperty().bindBidirectional(cLabelPane.maxScaleProperty())
+                bottom(VBox()) {
+                    add(cBottomGroupBar) {
+                        disableProperty().bind(!state.openedProperty())
                     }
                     add(HBox()) {
-                        hgrow = Priority.ALWAYS
-                    }
-                    add(cPicBox) {
-                        prefWidth = 200.0
-                        isWrapped = true
-                        disableProperty().bind(!state.openedProperty())
+                        add(CTextSlider()) {
+                            disableProperty().bind(cLabelPane.disableProperty())
+                            initScaleProperty().bind(cLabelPane.initScaleProperty())
+                            scaleProperty().bindBidirectional(cLabelPane.scaleProperty())
+                            minScaleProperty().bindBidirectional(cLabelPane.minScaleProperty())
+                            maxScaleProperty().bindBidirectional(cLabelPane.maxScaleProperty())
+                        }
+                        add(HBox()) {
+                            hgrow = Priority.ALWAYS
+                        }
+                        add(cPicBox) {
+                            prefWidth = 200.0
+                            isWrapped = true
+                            disableProperty().bind(!state.openedProperty())
+                        }
                     }
                 }
             }
