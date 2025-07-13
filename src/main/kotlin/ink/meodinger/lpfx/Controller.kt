@@ -552,6 +552,9 @@ class Controller(private val state: State) {
 //             cLabelPane.moveToLabel(cTreeView.selectedLabel)
             // Clear here, because the already happened selection may change it
 //            state.currentLabelIndex = NOT_FOUND
+            
+            // 自動設置焦點到label瀏覽區，確保F1-F4快捷鍵能夠正常使用
+            cTreeView.requestFocus()
         })
         Logger.info("Listened for current-pic-name change for clear label-index selection", "Controller")
 
