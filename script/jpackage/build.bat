@@ -6,7 +6,7 @@ if "%1"=="" (
 )
 echo VERSION: %VERSION%
 set DIR=%~dp0..\..
-rd /S /Q ".\LabelPlusFX"
+rd /S /Q ".\LabelPlusFX_ZS"
 set MODULES="%DIR%\target\build"
 set ICON="%DIR%\images\icons\cat.ico"
 set SCRIPT_DIR=%~dp0
@@ -15,7 +15,7 @@ jpackage --verbose ^
     --type app-image ^
     --app-version %VERSION% ^
     --copyright "Meodinger Tech (C) 2025" ^
-    --name LabelPlusFX ^
+    --name LabelPlusFX_ZS ^
     --icon %ICON% ^
     --dest %SCRIPT_DIR% ^
     --module-path %MODULES% ^
@@ -25,7 +25,7 @@ jpackage --verbose ^
 setlocal enabledelayedexpansion
 
 :: Target directory handling
-set "TARGET_DIR=%SCRIPT_DIR%\LabelPlusFX"
+set "TARGET_DIR=%SCRIPT_DIR%\LabelPlusFX_ZS"
 if not exist "%TARGET_DIR%\" mkdir "%TARGET_DIR%"
 
 :: File list to process
@@ -41,14 +41,14 @@ for %%F in (%FILE_LIST%) do (
     )
 )
 set OUTPUT_DIR=%SCRIPT_DIR%\Output
-set ZIP_NAME=LabelPlusFX-%VERSION%-Win64.zip
+set ZIP_NAME=LabelPlusFX_ZS-%VERSION%-Win64.zip
 
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 if exist "%OUTPUT_DIR%\%ZIP_NAME%" del "%OUTPUT_DIR%\%ZIP_NAME%"
 
 echo.
 echo Packing into ZIP: %ZIP_NAME%
-powershell.exe -Command "Compress-Archive -Path '%SCRIPT_DIR%\LabelPlusFX' -DestinationPath '%OUTPUT_DIR%\%ZIP_NAME%' -Force"
+powershell.exe -Command "Compress-Archive -Path '%SCRIPT_DIR%\LabelPlusFX_ZS' -DestinationPath '%OUTPUT_DIR%\%ZIP_NAME%' -Force"
 
 echo.
 echo Current directory structure:

@@ -14,9 +14,9 @@ DIR=$(cd "$(dirname "$0")/../../" && pwd)
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 MODULES="$DIR/target/build"
 ICON="$DIR/images/icons/cat.icns"
-TARGET_DIR="$SCRIPT_DIR/LabelPlusFX.app"
+TARGET_DIR="$SCRIPT_DIR/LabelPlusFX_ZS.app"
 OUTPUT_DIR="$SCRIPT_DIR/Output"
-ZIP_NAME="LabelPlusFX-$VERSION-Mac.zip"
+ZIP_NAME="LabelPlusFX_ZS-$VERSION-Mac.zip"
 
 # 清理旧目录
 rm -rf "$TARGET_DIR"
@@ -27,7 +27,7 @@ jpackage --verbose \
     --type app-image \
     --app-version "$VERSION" \
     --copyright "Meodinger Tech (C) 2025" \
-    --name LabelPlusFX \
+    --name LabelPlusFX_ZS \
     --icon "$ICON" \
     --dest "$SCRIPT_DIR" \
     --module-path $MODULES \
@@ -67,7 +67,7 @@ fi
 # 打包成 ZIP
 echo "Packing into ZIP: $ZIP_NAME"
 cd "$SCRIPT_DIR" || exit
-zip -r "$OUTPUT_DIR/$ZIP_NAME" "LabelPlusFX.app"
+zip -r "$OUTPUT_DIR/$ZIP_NAME" "LabelPlusFX_ZS.app"
 
 # 验证 ZIP 是否存在
 if [ -f "$OUTPUT_DIR/$ZIP_NAME" ]; then
