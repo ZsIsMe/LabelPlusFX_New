@@ -387,7 +387,7 @@ class Controller(private val state: State) {
                     // Update selection
                     cTreeView.selectLabel(it.labelIndex, clear = shouldClear, scrollTo = true)
                     // Move to center if double-click
-                    if (it.sourceEvent.isDoubleClick) cLabelPane.moveToLabel(it.labelIndex)
+                    // if (it.sourceEvent.isDoubleClick) cLabelPane.moveToLabel(it.labelIndex)
                 }
                 WorkMode.LabelMode -> doNothing()
             }
@@ -619,12 +619,14 @@ class Controller(private val state: State) {
         cTreeView.addEventHandler(MouseEvent.MOUSE_CLICKED) {
             if (it.button == MouseButton.PRIMARY && it.isDoubleClick)
                 if (cTreeView.selectedLabel != NOT_FOUND)
-                    cLabelPane.moveToLabel(cTreeView.selectedLabel)
+                    // cLabelPane.moveToLabel(cTreeView.selectedLabel)
+                    doNothing()
         }
         cTreeView.addEventHandler(KeyEvent.KEY_PRESSED) {
             if (it.code == KeyCode.UP || it.code == KeyCode.DOWN)
                 if (cTreeView.selectedLabel != NOT_FOUND)
-                    cLabelPane.moveToLabel(cTreeView.selectedLabel)
+                    // cLabelPane.moveToLabel(cTreeView.selectedLabel)
+                    doNothing()
         }
         Logger.info("Added effect: move to label on CTreeLabelItem select", "Controller")
 
@@ -776,13 +778,13 @@ class Controller(private val state: State) {
                     if (direction > 0) {
                         cPicBox.next()
                         cTreeView.selectFirst(clear = true, scrollTo = false)
-                        cLabelPane.moveToLabel(cTreeView.selectedLabel)
+                        // cLabelPane.moveToLabel(cTreeView.selectedLabel)
                         return
                     } else {
                         //  if selected last and try getting next, return first
                         cPicBox.back()
                         cTreeView.selectLast(clear = true, scrollTo = false)
-                        cLabelPane.moveToLabel(cTreeView.selectedLabel)
+                        // cLabelPane.moveToLabel(cTreeView.selectedLabel)
                        return
                     }
                 } else {
@@ -796,7 +798,7 @@ class Controller(private val state: State) {
             }
             Logger.info("moveCurrLabelTo$itemIndex","moveCurrLabelTo")
             val item = cTreeView.getTreeItem(itemIndex) as CTreeLabelItem
-            cLabelPane.moveToLabel(item.transLabel.index)
+            // cLabelPane.moveToLabel(item.transLabel.index)
             cTreeView.selectLabel(item.transLabel.index, clear = true, scrollTo = true)
         }
 
@@ -811,7 +813,7 @@ class Controller(private val state: State) {
                 else -> return@handler
             }
             cTreeView.selectFirst()
-            cLabelPane.moveToLabel(cTreeView.selectedLabel)
+            // cLabelPane.moveToLabel(cTreeView.selectedLabel)
             it.consume() // Consume used event
         }
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, arrowKeyChangePicHandler)
@@ -1296,7 +1298,7 @@ class Controller(private val state: State) {
         if (labelIndex != NOT_FOUND) {
             // NotNow: May throw NoSuchElementException if render not complete
             cTreeView.selectLabel(labelIndex, clear = true, scrollTo = true)
-            cLabelPane.moveToLabel(labelIndex)
+            // cLabelPane.moveToLabel(labelIndex)
         }
 
         // Accumulator
