@@ -18,6 +18,8 @@ import javafx.scene.shape.StrokeType
 import javafx.scene.text.Font
 import javafx.scene.text.FontWeight
 import javafx.scene.text.Text
+import javafx.animation.ScaleTransition
+import javafx.util.Duration
 
 
 /**
@@ -114,6 +116,16 @@ class CLabel(
      */
     var isSelected: Boolean by selectedProperty
 
+    private val scaleFactorProperty: DoubleProperty = SimpleDoubleProperty(1.0)
+    /**
+     * The scale factor for the CLabel when selected
+     */
+    fun scaleFactorProperty(): DoubleProperty = scaleFactorProperty
+    /**
+     * @see scaleFactorProperty
+     */
+    var scaleFactor: Double by scaleFactorProperty
+
     // endregion
 
     // region Privates
@@ -144,10 +156,19 @@ class CLabel(
 
         private var clip: Shape = circle // just a placeholder to make type non-null
 
+        private val scaleTransition = ScaleTransition(Duration.millis(200.0), root).apply {
+            cycleCount = 1
+            isAutoReverse = false
+        }
+
         init {
             root.apply {
                 prefWidthProperty().bind(cLabel.pickerRadiusProperty)
                 prefHeightProperty().bind(cLabel.pickerRadiusProperty)
+                
+                // Set initial scale
+                scaleX = cLabel.scaleFactor
+                scaleY = cLabel.scaleFactor
             }
             text.apply {
                 textOrigin = VPos.CENTER
@@ -220,6 +241,23 @@ class CLabel(
             cLabel.radiusProperty.addListener(updateListener)
             cLabel.selectedProperty.addListener(updateListener)
             cLabel.selectedStrokeProperty().addListener(updateListener)
+            
+            // Animate scale factor changes
+            cLabel.scaleFactorProperty.addListener { _, _, newValue ->
+                val targetScale = newValue.toDouble()
+                
+                // Stop any running animation
+                scaleTransition.stop()
+                
+                // Set up the transition
+                scaleTransition.fromX = root.scaleX
+                scaleTransition.fromY = root.scaleY
+                scaleTransition.toX = targetScale
+                scaleTransition.toY = targetScale
+                
+                // Start the animation
+                scaleTransition.play()
+            }
 
             // Manually update the first time
             updateListener.changed(null, null, null)
@@ -230,6 +268,9 @@ class CLabel(
         override fun getNode(): Node = root
 
         override fun dispose() {
+            // Stop any running animation
+            scaleTransition.stop()
+            
             clip.fillProperty().unbind()
             root.children.remove(clip)
 

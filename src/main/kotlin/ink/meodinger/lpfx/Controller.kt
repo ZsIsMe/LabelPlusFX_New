@@ -396,6 +396,10 @@ class Controller(private val state: State) {
                         cTreeView.selectLabel(it.labelIndex, clear = shouldClear, scrollTo = true)
                     }
                     
+                    // Update all labels' selection states and scale factors
+                    val selectedLabelIndices = cTreeView.getSelectedLabelIndices()
+                    cLabelPane.updateLabelSelectionStates(selectedLabelIndices)
+                    
                     // Move to center if double-click
                     // if (it.sourceEvent.isDoubleClick) cLabelPane.moveToLabel(it.labelIndex)
                 }
@@ -550,6 +554,13 @@ class Controller(private val state: State) {
             if (it != NOT_FOUND) state.currentLabelIndex = it
         })
         Logger.info("Listened for selectedGroup/Label", "Controller")
+        
+        // Listen for selection changes to update label scaling
+        cTreeView.selectionModel.selectedIndices.addListener(javafx.collections.ListChangeListener<Int> {
+            val selectedLabelIndices = cTreeView.getSelectedLabelIndices()
+            cLabelPane.updateLabelSelectionStates(selectedLabelIndices)
+        })
+        Logger.info("Listened for label selection changes to update scaling", "Controller")
 
         // Clear selected label when change picture.
         // This could clear the label-index related bindings like TransArea text

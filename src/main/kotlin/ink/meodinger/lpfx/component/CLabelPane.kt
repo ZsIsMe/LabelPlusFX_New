@@ -939,5 +939,17 @@ class CLabelPane(
      *          whether the label actually was layout or should be removed.
      */
     fun requestRemoveLabels() = labels.forEach(this::removeLabel)
+    
+    /**
+     * Update all labels' selection states and scale factors based on the provided selected indices
+     * @param selectedIndices Set of label indices that should be selected
+     */
+    fun updateLabelSelectionStates(selectedIndices: Set<Int>) {
+        labelNodes.forEach { label ->
+            val isSelected = selectedIndices.contains(label.index)
+            label.isSelected = isSelected
+            label.scaleFactor = if (isSelected) 1.5 else 1.0
+        }
+    }
 
 }
