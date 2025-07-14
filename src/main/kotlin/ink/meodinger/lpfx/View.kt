@@ -28,16 +28,19 @@ import javafx.collections.ListChangeListener
 import javafx.event.ActionEvent
 import javafx.geometry.Insets
 import javafx.geometry.Orientation
+import javafx.geometry.Pos
 import javafx.scene.control.*
 import javafx.scene.image.ImageView
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCodeCombination
 import javafx.scene.input.KeyCombination
 import javafx.scene.layout.BorderPane
+import javafx.scene.layout.FlowPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.Region
 import javafx.scene.layout.VBox
+import javafx.scene.text.Text
 import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.stage.FileChooser
@@ -100,6 +103,11 @@ class View(private val state: State) : BorderPane() {
      * Picture ComboBox, change pictures
      */
     val cPicBox: CComboBox<String> = CComboBox()
+
+    /**
+     * Group 2 pages button, show dialog to select pages with group 2
+     */
+    val bGroup2Pages: Button = Button()
 
     /**
      * Group ComboBox, change groups
@@ -318,6 +326,17 @@ class View(private val state: State) : BorderPane() {
                     disableProperty().bind(!state.openedProperty())
                 }
                 separator()
+                item(I18N["m.next_group2_page"]) {
+                    does { nextGroup2Page() }
+                    disableProperty().bind(!state.openedProperty())
+                    accelerator = KeyCodeCombination(KeyCode.G, KeyCombination.SHORTCUT_DOWN)
+                }
+                item(I18N["m.group2_pages"]) {
+                    does { showGroup2PagesDialog() }
+                    disableProperty().bind(!state.openedProperty())
+                    accelerator = KeyCodeCombination(KeyCode.H, KeyCombination.SHORTCUT_DOWN)
+                }
+                separator()
                 checkItem(I18N["m.stats_bar"]) {
                     selectedProperty().bindBidirectional(Preference.showStatsBarProperty())
                 }
@@ -380,6 +399,12 @@ class View(private val state: State) : BorderPane() {
                             prefWidth = 200.0
                             isWrapped = true
                             disableProperty().bind(!state.openedProperty())
+                        }
+                        add(bGroup2Pages) {
+                            text = I18N["m.group2_pages"]
+                            style = "-fx-text-fill: red;"
+                            disableProperty().bind(!state.openedProperty())
+                            does { showGroup2PagesDialog() }
                         }
                     }
                 }
@@ -942,5 +967,111 @@ class View(private val state: State) : BorderPane() {
         checker.show()
         checker.toFront()
     }
+    
+    private fun nextGroup2Page() {
+        val currentPicIndex = state.transFile.sortedPicNames.indexOf(state.currentPicName)
+        val picNames = state.transFile.sortedPicNames
+        
+        // 從下一張圖片開始搜索，循環到末尾後回到開頭
+        val startIndex = (currentPicIndex + 1) % picNames.size
+        
+        for (i in 0 until picNames.size) {
+            val picIndex = (startIndex + i) % picNames.size
+            val picName = picNames[picIndex]
+            val labels = state.transFile.getTransList(picName)
+            
+            // 檢查是否有 groupId = 1 的標籤（對應txt格式中的2）
+            if (labels.any { it.groupId == 1 }) {
+                state.currentPicName = picName
+                return
+            }
+        }
+        
+        // 如果沒找到任何頁面有第二分組，顯示提示
+        showInfo(state.stage, I18N["lpfx.view.tools.group2_pages_not_found"])
+    }
+    
+    private fun showGroup2PagesDialog() {
+        // 收集所有有分組2（groupId=1）的頁面
+        val group2Pages = ArrayList<String>()
+        for (picName in state.transFile.sortedPicNames) {
+            val labels = state.transFile.getTransList(picName)
+            if (labels.any { it.groupId == 1 }) {
+                group2Pages.add(picName)
+            }
+        }
+        
+        if (group2Pages.isEmpty()) {
+            showInfo(state.stage, I18N["lpfx.view.tools.group2_pages_not_found"])
+            return
+        }
+        
+        // 創建並顯示對話框
+        val dialog = Group2PagesDialog(group2Pages, state.stage)
+        val result = dialog.showAndWait()
+        if (result.isPresent) {
+            state.currentPicName = result.get()
+        }
+    }
 
+}
+
+/**
+ * 分組2頁面選擇對話框
+ * 顯示所有有分組2（groupId=1）的頁面按鈕，點擊任何按鈕即可跳轉到對應頁面
+ */
+private class Group2PagesDialog(
+    private val pages: List<String>,
+    private val owner: javafx.stage.Window
+) : Dialog<String>() {
+    
+    init {
+        initOwner(owner)
+        title = I18N["lpfx.view.tools.group2_pages_dialog_title"]
+        isResizable = false
+        
+        // 創建頭部文本
+        val headerLabel = Text(I18N["lpfx.view.tools.group2_pages_dialog_header"]).apply {
+            wrappingWidth = 400.0
+            style = "-fx-font-size: 14px;"
+        }
+        
+        // 創建頁面按鈕面板
+        val pagesPane = FlowPane().apply {
+            hgap = 8.0
+            vgap = 8.0
+            alignment = Pos.CENTER
+            prefWrapLength = 400.0
+        }
+        
+        // 為每個頁面創建按鈕
+        pages.forEach { pageName ->
+            val pageButton = Button(pageName).apply {
+                prefWidth = 120.0
+                style = "-fx-font-size: 12px;"
+                
+                // 點擊時直接選擇該頁面並關閉對話框
+                setOnAction {
+                    result = pageName
+                    close()
+                }
+            }
+            pagesPane.children.add(pageButton)
+        }
+        
+        // 主內容面板
+        val content = VBox(15.0).apply {
+            padding = Insets(20.0)
+            alignment = Pos.CENTER
+            children.addAll(headerLabel, pagesPane)
+        }
+        
+        dialogPane.content = content
+        dialogPane.buttonTypes.add(ButtonType.CANCEL)
+        
+        // 設置結果轉換器
+        setResultConverter { buttonType ->
+            if (buttonType == ButtonType.CANCEL) null else result
+        }
+    }
 }
