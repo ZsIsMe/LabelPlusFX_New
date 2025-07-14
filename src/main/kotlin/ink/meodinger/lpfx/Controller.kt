@@ -8,6 +8,7 @@ import ink.meodinger.lpfx.action.LabelAction
 import ink.meodinger.lpfx.action.Action
 import ink.meodinger.lpfx.component.CLabelPane
 import ink.meodinger.lpfx.component.CTreeLabelItem
+import ink.meodinger.lpfx.component.CTreeMenu
 import ink.meodinger.lpfx.component.common.CFileChooser
 import ink.meodinger.lpfx.component.dialog.*
 import ink.meodinger.lpfx.io.export
@@ -957,13 +958,19 @@ class Controller(private val state: State) {
                         it.consume()
                     }
                 }
+                KeyCode.F6 -> {
+                    // F6: 建相鄰文本
+                    if (triggerCreateAdjacentText()) {
+                        it.consume()
+                    }
+                }
                 else -> return@handler
             }
         }
         cTreeView.addEventHandler(KeyEvent.KEY_PRESSED, functionKeyHandler)
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, functionKeyHandler)
         cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, functionKeyHandler)
-        Logger.info("Transformed F1-F5", "Controller")
+        Logger.info("Transformed F1-F6", "Controller")
 //
 
 
@@ -1154,6 +1161,26 @@ class Controller(private val state: State) {
                 state.transFile.getTransLabel(state.currentPicName, it.transLabel.index),
             )
         }))
+        return true
+    }
+
+    /**
+     * 觸發建相鄰文本功能 (F6)
+     * @return true if triggered successfully, false otherwise
+     */
+    private fun triggerCreateAdjacentText(): Boolean {
+        // 檢查是否有開啟的檔案
+        if (!state.isOpened) return false
+        
+        // 獲取選中的標籤項
+        val selectedItems = cTreeView.selectionModel.selectedItems
+            .filterIsInstance<CTreeLabelItem>()
+        
+        if (selectedItems.isEmpty()) return false
+
+        // 通過contextMenu訪問CTreeMenu
+        val cTreeMenu = cTreeView.contextMenu as CTreeMenu
+        cTreeMenu.triggerCreateAdjacentText(selectedItems)
         return true
     }
 

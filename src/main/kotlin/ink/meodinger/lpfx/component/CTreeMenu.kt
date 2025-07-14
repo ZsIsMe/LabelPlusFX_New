@@ -19,6 +19,8 @@ import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.control.*
+import javafx.scene.image.Image
+import javafx.scene.input.Clipboard
 import javafx.scene.layout.HBox
 import javafx.scene.paint.Color
 
@@ -243,7 +245,12 @@ class CTreeMenu(
 
     private val lPasteLabelTextItem = MenuItem(I18N["context.paste_label_text"])
 
+    private val lCreateAdjacentTextHandler = EventHandler<ActionEvent> { event ->
+        @Suppress("UNCHECKED_CAST") val items = event.source as List<CTreeLabelItem>
+        createAdjacentText(items)
+    }
 
+    private val lCreateAdjacentTextItem = MenuItem(I18N["context.create_adjacent_text"])
 
     // endregion
 
@@ -299,6 +306,7 @@ class CTreeMenu(
                 lMoveToItem.setOnAction { lMoveToHandler.handle(ActionEvent(selectedItems, lMoveToItem)) }
                 lCopyLabelTextItem.setOnAction { lCopyLabelTextHandler.handle(ActionEvent(selectedItems, lCopyLabelTextItem)) }
                 lPasteLabelTextItem.setOnAction { lPasteLabelTextHandler.handle(ActionEvent(selectedItems, lPasteLabelTextItem)) }
+                lCreateAdjacentTextItem.setOnAction { lCreateAdjacentTextHandler.handle(ActionEvent(selectedItems, lCreateAdjacentTextItem)) }
                 lDeleteItem.setOnAction { lDeleteHandler.handle(ActionEvent(selectedItems, lDeleteItem)) }
 
                 items.add(lMoveToIndexItem)
@@ -306,6 +314,7 @@ class CTreeMenu(
                 items.add(SeparatorMenuItem())
                 items.add(lCopyLabelTextItem)
                 items.add(lPasteLabelTextItem)
+                items.add(lCreateAdjacentTextItem)
                 items.add(SeparatorMenuItem())
                 items.add(lDeleteItem)
             } else {
@@ -337,6 +346,80 @@ class CTreeMenu(
      */
     fun triggerGroupDelete(groupName: String) {
         gDeleteItem.onAction.handle(ActionEvent(groupName, null))
+    }
+
+    /**
+     * Trigger create-adjacent-text action
+     * @param items Selected CTreeLabelItem list
+     */
+    fun triggerCreateAdjacentText(items: List<CTreeLabelItem>) {
+        createAdjacentText(items)
+    }
+
+    /**
+     * 創建相鄰文本的功能實現
+     * @param items 選中的標籤項列表
+     */
+    private fun createAdjacentText(items: List<CTreeLabelItem>) {
+        if (items.isEmpty()) return
+        
+        // 檢查剪貼板是否有文本內容
+        val clipboard = Clipboard.getSystemClipboard()
+        if (!clipboard.hasString()) return
+        
+        val clipboardText = clipboard.string
+        
+        // 獲取最後一個（最右側）選中的標籤
+        val lastSelectedLabel = items.maxByOrNull { it.transLabel.x }
+        if (lastSelectedLabel == null) return
+        
+        // 計算新標籤的位置
+        // 在最後一個標籤左邊大概1個Label寬度的位置
+        val labelRadius = Settings.labelRadius
+        val labelWidth = labelRadius * 2
+        
+        // 從State中獲取當前圖片的尺寸信息
+        val currentPicFile = state.getPicFileNow()
+        if (!currentPicFile.exists()) return
+        
+        val currentImage = Image(currentPicFile.toURI().toString())
+        val imageWidth = currentImage.width
+        
+        val offset = labelWidth * 1 / imageWidth
+        
+        val newX = (lastSelectedLabel.transLabel.x - offset).coerceIn(0.0, 1.0)
+        val newY = lastSelectedLabel.transLabel.y // 相同高度
+        
+        // 使用與最後選中標籤相同的分組
+        val groupId = lastSelectedLabel.transLabel.groupId
+        
+        // 計算新的標籤索引：找到選中標籤中最大的索引，然後加1
+        val maxSelectedIndex = items.maxOfOrNull { it.transLabel.index } ?: 0
+        val newIndex = maxSelectedIndex + 1
+        
+        // 創建新的標籤
+        val newLabel = TransLabel(newIndex, groupId, newX, newY, clipboardText)
+        
+        // 執行添加標籤的動作
+        val labelAction = LabelAction(
+            ActionType.ADD, state,
+            state.currentPicName,
+            newLabel
+        )
+        
+        // 創建包含選中新標籤的複合動作
+        val createAction = FunctionAction(
+            { 
+                labelAction.commit()
+                // 選中新創建的標籤
+                view.selectLabel(newIndex, clear = true, scrollTo = true)
+            },
+            { 
+                labelAction.revert()
+            }
+        )
+        
+        state.doAction(createAction)
     }
 
 }

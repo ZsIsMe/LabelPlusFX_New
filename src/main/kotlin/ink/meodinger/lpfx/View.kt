@@ -135,7 +135,7 @@ class View(private val state: State) : BorderPane() {
     // Private Components
     private val statsBar: HBox = HBox()
     private val cTreeMenu: CTreeMenu = CTreeMenu(state, cTreeView)
-    private val cTextMenu: CTextMenu = CTextMenu(cTransArea)
+    private val cTextMenu: CTextMenu = CTextMenu(cTransArea, state, cTreeView)
 
     // endregion
 
