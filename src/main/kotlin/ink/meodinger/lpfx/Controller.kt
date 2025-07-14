@@ -569,7 +569,8 @@ class Controller(private val state: State) {
             //clear selection
             state.currentLabelIndex = NOT_FOUND
             // So we should manually clear it to make sure we start from the first label
-             cTreeView.selectRoot(clear = true, scrollTo = false)
+            // 如果有Label，自動選中第一個；如果沒有Label，選中根節點
+            cTreeView.selectFirst(clear = true, scrollTo = false)
 //             cLabelPane.moveToLabel(cTreeView.selectedLabel)
             // Clear here, because the already happened selection may change it
 //            state.currentLabelIndex = NOT_FOUND
