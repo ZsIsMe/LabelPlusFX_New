@@ -721,7 +721,7 @@ class Controller(private val state: State) {
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, changePicHandler)
         Logger.info("Transformed Q/W pressed", "Controller")
 
-        // Transform number key press to CTreeView select
+        // Transform number key press to CTreeView select or Command+number to quick move
         val numberBuilder = StringBuilder()
         view.addEventHandler(KeyEvent.KEY_PRESSED) handler@{
             if (!it.code.isDigitKey) {
@@ -732,6 +732,17 @@ class Controller(private val state: State) {
             it.consume() // stop further propagation
 
             val number = it.text.toInt()
+            
+            // 檢查是否是 Command+數字鍵 (快速移動分組)
+            if (it.isMetaDown || it.isControlDown) {
+                if (state.transFileProperty().isNotNull.value && number in 1..state.transFile.groupCount) {
+                    val targetGroupIndex = number - 1
+                    val targetGroup = state.transFile.groupList[targetGroupIndex]
+                    triggerQuickMoveToGroup(targetGroup)
+                }
+                return@handler
+            }
+            
             if (numberBuilder.isEmpty()) {
                 // Not parsing
                 if (number == 0) {
@@ -766,7 +777,7 @@ class Controller(private val state: State) {
                 }
             }
         }
-        Logger.info("Transformed num-key pressed", "Controller")
+        Logger.info("Transformed num-key pressed & Command+num-key for quick move", "Controller")
 
         /**
          * Find next LabelItem as int index.
