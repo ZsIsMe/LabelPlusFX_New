@@ -334,7 +334,7 @@ class View(private val state: State) : BorderPane() {
                 item(I18N["m.group2_pages"]) {
                     does { showGroup2PagesDialog() }
                     disableProperty().bind(!state.openedProperty())
-                    accelerator = KeyCodeCombination(KeyCode.H, KeyCombination.SHORTCUT_DOWN)
+                    accelerator = KeyCodeCombination(KeyCode.L, KeyCombination.SHORTCUT_DOWN)
                 }
                 separator()
                 checkItem(I18N["m.stats_bar"]) {
