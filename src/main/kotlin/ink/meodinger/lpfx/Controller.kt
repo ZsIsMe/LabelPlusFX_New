@@ -384,8 +384,18 @@ class Controller(private val state: State) {
                 WorkMode.InputMode -> {
                     // Check if Command/Meta key is pressed for multi-selection
                     val shouldClear = !it.sourceEvent.isMetaDown
-                    // Update selection
-                    cTreeView.selectLabel(it.labelIndex, clear = shouldClear, scrollTo = true)
+                    
+                    // Check if the label is already selected
+                    val isCurrentlySelected = cTreeView.isLabelSelected(it.labelIndex)
+                    
+                    if (isCurrentlySelected) {
+                        // If already selected, deselect it
+                        cTreeView.deselectLabel(it.labelIndex)
+                    } else {
+                        // If not selected, select it
+                        cTreeView.selectLabel(it.labelIndex, clear = shouldClear, scrollTo = true)
+                    }
+                    
                     // Move to center if double-click
                     // if (it.sourceEvent.isDoubleClick) cLabelPane.moveToLabel(it.labelIndex)
                 }

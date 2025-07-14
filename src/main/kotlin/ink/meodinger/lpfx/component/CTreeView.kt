@@ -241,6 +241,16 @@ class CTreeView: TreeView<String>() {
         items.forEach(selectionModel::select)
         if (scrollTo && items.isNotEmpty()) scrollTo(getRow(items.first()))
     }
+    
+    fun isLabelSelected(labelIndex: Int): Boolean {
+        val item = labelItems.firstOrNull { it.transLabel.index == labelIndex } ?: return false
+        return selectionModel.selectedIndices.contains(getRow(item))
+    }
+    
+    fun deselectLabel(labelIndex: Int) {
+        val item = labelItems.firstOrNull { it.transLabel.index == labelIndex } ?: return
+        selectionModel.clearSelection(getRow(item))
+    }
 
     fun copyLabelText(labelIndex: Int) {
         val item = labelItems.firstOrNull { it.transLabel.index == labelIndex } ?:return
