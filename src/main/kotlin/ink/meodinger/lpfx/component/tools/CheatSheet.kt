@@ -28,7 +28,7 @@ class CheatSheet : Stage() {
         icons.add(ICON)
         title = I18N["m.cheat"]
         width = 400.0
-        height = 400.0
+        height = 450.0
         isResizable = false
         scene = Scene(GridPane().apply {
             padding = Insets(16.0)
@@ -49,19 +49,21 @@ class CheatSheet : Stage() {
             add(Label(I18N["cheat.switch_last"]), 1, 4)
             add(Label("Cmd + 1-9"), 0, 5)
             add(Label("快速移動選中標籤到對應分組"), 1, 5)
+            add(Label("Command/Ctrl + ;"), 0, 6)
+            add(Label("隱藏標籤2秒"), 1, 6)
 
-            add(Separator(), 0, 6, 2, 1)
+            add(Separator(), 0, 7, 2, 1)
 
-            add(Label(I18N["cheat.mouse"]), 0, 7, 2, 1) {
+            add(Label(I18N["cheat.mouse"]), 0, 8, 2, 1) {
                 gridHAlign = HPos.CENTER
             }
-            add(Label(I18N["cheat.dnd.dsc"]), 0, 8)
-            add(Label(I18N["cheat.dnd.res"]), 1, 8)
-            add(Label(I18N["cheat.drag_label.dsc"]), 0, 9)
-            add(Label(I18N["cheat.drag_label.res"]), 1, 9)
-            add(Label(I18N["cheat.double_label.dsc"]), 0, 10)
-            add(Label(I18N["cheat.double_label.res"]), 1, 10)
-            add(Hyperlink(I18N["cheat.more_help"]), 0, 11, 2, 1) {
+            add(Label(I18N["cheat.dnd.dsc"]), 0, 9)
+            add(Label(I18N["cheat.dnd.res"]), 1, 9)
+            add(Label(I18N["cheat.drag_label.dsc"]), 0, 10)
+            add(Label(I18N["cheat.drag_label.res"]), 1, 10)
+            add(Label(I18N["cheat.double_label.dsc"]), 0, 11)
+            add(Label(I18N["cheat.double_label.res"]), 1, 11)
+            add(Hyperlink(I18N["cheat.more_help"]), 0, 12, 2, 1) {
                 gridHAlign = HPos.CENTER
                 setOnAction {
                     if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {

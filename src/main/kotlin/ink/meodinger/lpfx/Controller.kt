@@ -971,7 +971,16 @@ class Controller(private val state: State) {
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED, functionKeyHandler)
         cTransArea.addEventHandler(KeyEvent.KEY_PRESSED, functionKeyHandler)
         Logger.info("Transformed F1-F6", "Controller")
-//
+        
+        // Command+; 快捷鍵：隱藏標籤2秒
+        val hideLabelHandler = EventHandler<KeyEvent> handler@{
+            if ((it.isMetaDown || it.isControlDown) && it.code == KeyCode.SEMICOLON) {
+                it.consume()
+                view.hideLabelsFor2Seconds()
+            }
+        }
+        view.addEventHandler(KeyEvent.KEY_PRESSED, hideLabelHandler)
+        Logger.info("Transformed Ctrl/Meta + ;", "Controller")
 
 
     }

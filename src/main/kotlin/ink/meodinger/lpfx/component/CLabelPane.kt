@@ -226,7 +226,7 @@ class CLabelPane(
     private var selecting = false
 
     @Suppress("UNCHECKED_CAST")
-    private val labelNodes: ObservableList<CLabel> get() = anchorPane.children as ObservableList<CLabel>
+    val labelNodes: ObservableList<CLabel> get() = anchorPane.children as ObservableList<CLabel>
 
     // endregion
 

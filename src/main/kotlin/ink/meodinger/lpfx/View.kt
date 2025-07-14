@@ -23,6 +23,7 @@ import javafx.animation.Interpolator
 import javafx.animation.KeyFrame
 import javafx.animation.KeyValue
 import javafx.animation.Timeline
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.value.ChangeListener
 import javafx.collections.ListChangeListener
 import javafx.event.ActionEvent
@@ -110,6 +111,11 @@ class View(private val state: State) : BorderPane() {
     val bGroup2Pages: Button = Button()
 
     /**
+     * Hide labels 2 seconds button
+     */
+    val bHideLabels: Button = Button()
+
+    /**
      * Group ComboBox, change groups
      */
     val cGroupBox: CComboBox<TransGroup> = CComboBox()
@@ -139,6 +145,10 @@ class View(private val state: State) : BorderPane() {
      */
     val cTransArea: CLigatureArea = CLigatureArea()
 
+    /**
+     * Property to track if hide labels functionality is in progress
+     */
+    private val isHidingLabelsProperty = SimpleBooleanProperty(false)
 
     // Private Components
     private val statsBar: HBox = HBox()
@@ -405,6 +415,11 @@ class View(private val state: State) : BorderPane() {
                             style = "-fx-text-fill: red;"
                             disableProperty().bind(!state.openedProperty())
                             does { showGroup2PagesDialog() }
+                        }
+                        add(bHideLabels) {
+                            text = "隱藏標籤2秒"
+                            disableProperty().bind(!state.openedProperty() or isHidingLabelsProperty)
+                            does { hideLabelsFor2Seconds() }
                         }
                     }
                 }
@@ -1013,6 +1028,31 @@ class View(private val state: State) : BorderPane() {
             state.currentPicName = result.get()
         }
     }
+    
+    fun hideLabelsFor2Seconds() {
+        if (!state.isOpened || isHidingLabelsProperty.get()) return
+        
+        // 獲取所有Label節點
+        val labelNodes = cLabelPane.labelNodes
+        
+        // 隱藏所有Label
+        labelNodes.forEach { it.isVisible = false }
+        
+        // 設置隱藏狀態，這會自動禁用按鈕
+        isHidingLabelsProperty.set(true)
+        
+        // 2秒後恢復顯示
+        val timer = javafx.animation.Timeline(
+            javafx.animation.KeyFrame(
+                javafx.util.Duration.seconds(2.0),
+                javafx.event.EventHandler {
+                    labelNodes.forEach { it.isVisible = true }
+                    isHidingLabelsProperty.set(false)
+                }
+            )
+        )
+        timer.play()
+    }
 
 }
 
@@ -1047,6 +1087,7 @@ private class Group2PagesDialog(
         // 為每個頁面創建按鈕
         pages.forEach { pageName ->
             val pageButton = Button(pageName).apply {
+                isMnemonicParsing = false
                 prefWidth = 120.0
                 style = "-fx-font-size: 12px;"
                 
