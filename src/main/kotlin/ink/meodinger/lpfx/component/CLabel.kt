@@ -6,11 +6,13 @@ import ink.meodinger.lpfx.util.property.*
 
 import javafx.beans.binding.Bindings
 import javafx.beans.property.*
+import javafx.geometry.Insets
 import javafx.geometry.VPos
 import javafx.scene.Node
 import javafx.scene.control.Control
 import javafx.scene.control.Skin
 import javafx.scene.layout.Pane
+import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.scene.shape.Shape
@@ -18,6 +20,7 @@ import javafx.scene.shape.StrokeType
 import javafx.scene.text.Font
 import javafx.scene.text.FontWeight
 import javafx.scene.text.Text
+import javafx.scene.text.TextBoundsType
 import javafx.animation.ScaleTransition
 import javafx.util.Duration
 
@@ -126,6 +129,26 @@ class CLabel(
      */
     var scaleFactor: Double by scaleFactorProperty
 
+    private val groupNameProperty: StringProperty = SimpleStringProperty("")
+    /**
+     * The name of the group to which the label belongs
+     */
+    fun groupNameProperty(): StringProperty = groupNameProperty
+    /**
+     * @see groupNameProperty
+     */
+    var groupName: String by groupNameProperty
+
+    private val groupNameVisibleProperty: BooleanProperty = SimpleBooleanProperty(false)
+    /**
+     * Whether the group name is visible
+     */
+    fun groupNameVisibleProperty(): BooleanProperty = groupNameVisibleProperty
+    /**
+     * @see groupNameVisibleProperty
+     */
+    var isGroupNameVisible: Boolean by groupNameVisibleProperty
+
     // endregion
 
     // region Privates
@@ -152,6 +175,8 @@ class CLabel(
 
         private val root = Pane()
         private val text = Text()
+        private val groupNameText = Text()
+        private val groupNamePane = StackPane(groupNameText)
         private val circle = Circle()
 
         private var clip: Shape = circle // just a placeholder to make type non-null
@@ -200,6 +225,21 @@ class CLabel(
                 centerXProperty().bind(cLabel.pickerRadiusProperty)
                 centerYProperty().bind(cLabel.pickerRadiusProperty)
             }
+            groupNameText.apply {
+                textProperty().bind(cLabel.groupNameProperty().transform { name ->
+                    name.toCharArray().joinToString("\n")
+                })
+                font = Font.font(12.0)
+                boundsType = TextBoundsType.VISUAL
+            }
+            groupNamePane.apply {
+                padding = Insets(2.0)
+                style = "-fx-background-color: rgb(240, 240, 240); -fx-background-radius: 4;"
+                visibleProperty().bind(cLabel.groupNameVisibleProperty())
+
+                layoutXProperty().bind(cLabel.pickerRadiusProperty.subtract(widthProperty().divide(2)))
+                layoutYProperty().bind(cLabel.radiusProperty.multiply(2).add(5))
+            }
 
             // Update
             val updateListener = onChange<Any> {
@@ -230,9 +270,9 @@ class CLabel(
                         ))
                         fill = Color.TRANSPARENT
                     }
-                    root.children.setAll(strokeCircle,text, clip)
+                    root.children.setAll(strokeCircle,text, clip, groupNamePane)
                 } else {
-                    root.children.setAll(text, clip)
+                    root.children.setAll(text, clip, groupNamePane)
                 }
 
 
@@ -273,6 +313,7 @@ class CLabel(
             
             clip.fillProperty().unbind()
             root.children.remove(clip)
+            root.children.remove(groupNamePane)
 
             text.textProperty().unbind()
             text.fillProperty().unbind()

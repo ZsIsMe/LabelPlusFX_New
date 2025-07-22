@@ -642,6 +642,13 @@ class CLabelPane(
             selectedStrokeProperty().bind(labelSelectedStrokeProperty)
             colorOpacityProperty().bind(labelColorOpacityProperty)
 
+            // Group Name
+            groupNameProperty().bind(transLabel.groupIdProperty().transform { groupId ->
+                state.transFile.groupList.getOrNull(groupId.toInt())?.name ?: ""
+            })
+            groupNameVisibleProperty().bind(state.workModeProperty().transform { it == WorkMode.LabelMode })
+
+
             // Tooltip
             tooltip = Tooltip().apply {
                 isWrapText = true
@@ -787,6 +794,8 @@ class CLabelPane(
         label.textOpaqueProperty().unbind()
         label.selectedStrokeProperty().unbind()
         label.colorOpacityProperty().unbind()
+        label.groupNameProperty().unbind()
+        label.groupNameVisibleProperty().unbind()
 
         // Remove view
         labelNodes.remove(label)

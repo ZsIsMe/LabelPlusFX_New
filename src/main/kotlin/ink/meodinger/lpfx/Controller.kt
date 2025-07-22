@@ -377,9 +377,7 @@ class Controller(private val state: State) {
 
                 }
                 WorkMode.LabelMode -> {
-                    val transLabel = state.transFile.getTransLabel(state.currentPicName, it.labelIndex)
-                    val transGroup = state.transFile.groupList[transLabel.groupId]
-                    cLabelPane.showText(transGroup.name, transGroup.color, it.displayX, it.displayY)
+                    // Do nothing, group name is now displayed below the label
                 }
             }
         }
