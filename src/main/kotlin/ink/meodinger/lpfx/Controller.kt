@@ -14,6 +14,7 @@ import ink.meodinger.lpfx.component.dialog.*
 import ink.meodinger.lpfx.io.export
 import ink.meodinger.lpfx.io.load
 import ink.meodinger.lpfx.io.pack
+import ink.meodinger.lpfx.io.LabeledImageExporter
 import ink.meodinger.lpfx.options.*
 import ink.meodinger.lpfx.type.LPFXTask
 import ink.meodinger.lpfx.type.TransFile
@@ -1509,6 +1510,13 @@ class Controller(private val state: State) {
         }
 
         showInfo(state.stage, I18N["info.exported_successful"])
+    }
+
+    /**
+     * 导出当前页面带标签的图片
+     */
+    fun exportCurrentPageWithLabels() {
+        LabeledImageExporter.exportCurrentPageWithLabels(state)
     }
 
     /**

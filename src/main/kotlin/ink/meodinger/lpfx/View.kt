@@ -317,6 +317,11 @@ class View(private val state: State) : BorderPane() {
                     does { exportTransPack() }
                     disableProperty().bind(!state.openedProperty())
                 }
+                separator()
+                item("导出当前页带标签图片") {
+                    does { exportCurrentPageWithLabels() }
+                    disableProperty().bind(!state.openedProperty())
+                }
             }
             menu(I18N["mm.tools"]) {
                 checkItem(I18N["m.dict"]) {
@@ -812,6 +817,10 @@ class View(private val state: State) : BorderPane() {
 
         val file = chooserPack.showSaveDialog(state.stage) ?: return
         state.controller.pack(file)
+    }
+
+    private fun exportCurrentPageWithLabels() {
+        state.controller.exportCurrentPageWithLabels()
     }
 
     private fun settings() {
