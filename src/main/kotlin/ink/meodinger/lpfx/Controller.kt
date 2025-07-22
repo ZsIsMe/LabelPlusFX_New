@@ -42,6 +42,7 @@ import javafx.collections.ObservableList
 import javafx.collections.SetChangeListener
 import javafx.embed.swing.SwingFXUtils
 import javafx.event.EventHandler
+import javafx.event.ActionEvent
 import javafx.geometry.Insets
 import javafx.scene.Cursor
 import javafx.scene.control.*
@@ -94,6 +95,7 @@ class Controller(private val state: State) {
     private val cGroupBox       = view.cGroupBox
     private val cGroupBar       = view.cGroupBar
     private val cBottomGroupBar = view.cBottomGroupBar
+    private val cRightGroupBar  = view.cRightGroupBar
     private val cLabelPane      = view.cLabelPane
     private val cTreeView       = view.cTreeView
     private val cTransArea      = view.cTransArea
@@ -383,7 +385,8 @@ class Controller(private val state: State) {
         }
         cLabelPane.setOnLabelClick  handler@{
             when (state.workMode) {
-                WorkMode.InputMode -> {
+                WorkMode.InputMode,
+                WorkMode.LabelMode -> {
                     // Check if Command/Meta key is pressed for multi-selection
                     val shouldClear = !it.sourceEvent.isMetaDown
                     
@@ -405,7 +408,6 @@ class Controller(private val state: State) {
                     // Move to center if double-click
                     // if (it.sourceEvent.isDoubleClick) cLabelPane.moveToLabel(it.labelIndex)
                 }
-                WorkMode.LabelMode -> doNothing()
             }
         }
         cLabelPane.setOnLabelMove   handler@{
@@ -471,6 +473,14 @@ class Controller(private val state: State) {
             triggerQuickMoveToGroup(targetGroup)
         }
         Logger.info("Bound BottomGroupBar & QuickMove", "Controller")
+
+        // RightGroupBar
+        cRightGroupBar.groupsProperty().bind(groupsBinding)
+        cRightGroupBar.setOnGroupMove { event: ActionEvent ->
+            val targetGroup = event.getSource() as TransGroup
+            triggerQuickMoveToGroup(targetGroup)
+        }
+        Logger.info("Bound RightGroupBar & QuickMove", "Controller")
 
         // GroupBox
         cGroupBox.itemsProperty().bind(groupsBinding)

@@ -22,7 +22,10 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.input.TouchEvent
 import javafx.scene.layout.*
 import javafx.scene.paint.Color
+import javafx.scene.text.Font
+import javafx.scene.text.FontWeight
 import javafx.scene.text.Text
+import javafx.scene.text.TextBoundsType
 
 
 /**
@@ -96,6 +99,26 @@ class CGroup(
      * @see onActionProperty
      */
     fun setOnAction(handler: EventHandler<ActionEvent>) = onActionProperty.set(handler)
+
+    private val largeFontProperty: BooleanProperty = SimpleBooleanProperty(false)
+    /**
+     * Whether to use large font for group bar
+     */
+    fun largeFontProperty(): BooleanProperty = largeFontProperty
+    /**
+     * @see largeFontProperty
+     */
+    var isLargeFont: Boolean by largeFontProperty
+
+    private val rightGroupBarProperty: BooleanProperty = SimpleBooleanProperty(false)
+    /**
+     * Whether this is for right group bar (single line display)
+     */
+    fun rightGroupBarProperty(): BooleanProperty = rightGroupBarProperty
+    /**
+     * @see rightGroupBarProperty
+     */
+    var isRightGroupBar: Boolean by rightGroupBarProperty
 
     // endregion
 
@@ -180,19 +203,54 @@ class CGroup(
                 ))
                 prefWidthProperty().bind(Bindings.createDoubleBinding(
                     {
-                        text.boundsInLocal.width + (BORDER_WIDTH + PADDING) * 2
-                    }, text.textProperty()
+                        val baseWidth = text.boundsInLocal.width + (BORDER_WIDTH + PADDING) * 2
+                        if (control.isLargeFont) {
+                            if (control.isRightGroupBar) {
+                                // 右側分組欄允許更大寬度以容納長文字
+                                baseWidth.coerceAtLeast(80.0).coerceAtMost(200.0)
+                            } else {
+                                // 底部分組欄保持原來的限制
+                                baseWidth.coerceAtMost(140.0).coerceAtLeast(80.0)
+                            }
+                        } else {
+                            baseWidth
+                        }
+                    }, text.textProperty(), control.largeFontProperty, control.rightGroupBarProperty
                 ))
                 prefHeightProperty().bind(Bindings.createDoubleBinding(
                     {
-                        text.boundsInLocal.height + (BORDER_WIDTH + PADDING) * 2
-                    }, text.textProperty()
+                        val baseHeight = text.boundsInLocal.height + (BORDER_WIDTH + PADDING) * 2
+                        if (control.isLargeFont) {
+                            baseHeight.coerceAtLeast(50.0).coerceAtMost(50.0)
+                        } else {
+                            baseHeight
+                        }
+                    }, text.textProperty(), control.largeFontProperty
                 ))
 
                 add(text) {
                     textOrigin = VPos.TOP
                     textProperty().bind(control.nameProperty)
                     fillProperty().bind(control.colorProperty)
+                    boundsType = TextBoundsType.VISUAL
+                    
+                    // 右側分組欄單行顯示，底部分組欄支持換行
+                    wrappingWidthProperty().bind(Bindings.createDoubleBinding({
+                        if (control.isLargeFont && !control.isRightGroupBar) {
+                            120.0  // 底部分組欄支持換行
+                        } else {
+                            0.0   // 右側分組欄單行顯示或普通模式不換行
+                        }
+                    }, control.largeFontProperty, control.rightGroupBarProperty))
+
+                    // 字體樣式綁定到 largeFontProperty
+                    fontProperty().bind(control.largeFontProperty.transform { isLarge ->
+                        if (isLarge) {
+                            Font.font("System", FontWeight.BOLD, 20.0)
+                        } else {
+                            Font.font("System", FontWeight.NORMAL, 12.0)
+                        }
+                    })
 
                     // FIXME: Text will move a little upper if Group-Name changes
 
@@ -210,6 +268,8 @@ class CGroup(
             text.apply {
                 textProperty().unbind()
                 fillProperty().unbind()
+                fontProperty().unbind()
+                wrappingWidthProperty().unbind()
                 layoutXProperty().unbind()
                 layoutYProperty().unbind()
                 root.children.remove(this)

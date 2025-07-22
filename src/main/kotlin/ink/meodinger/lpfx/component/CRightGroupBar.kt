@@ -2,7 +2,7 @@ package ink.meodinger.lpfx.component
 
 import ink.meodinger.lpfx.NOT_FOUND
 import ink.meodinger.lpfx.type.TransGroup
-import ink.meodinger.lpfx.util.component.hgrow
+import ink.meodinger.lpfx.util.component.vgrow
 import ink.meodinger.lpfx.util.property.getValue
 import ink.meodinger.lpfx.util.property.setValue
 import ink.meodinger.lpfx.util.property.onNew
@@ -11,7 +11,7 @@ import javafx.beans.property.*
 import javafx.collections.*
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
-import javafx.scene.layout.HBox
+import javafx.scene.layout.VBox
 import javafx.scene.layout.Priority
 import javafx.scene.paint.Color
 
@@ -23,9 +23,9 @@ import javafx.scene.paint.Color
  */
 
 /**
- * A ToolBar to display groups for quick move functionality
+ * A VBox to display groups for quick move functionality vertically
  */
-class CBottomGroupBar : HBox() {
+class CRightGroupBar : VBox() {
 
     // region Properties
 
@@ -57,17 +57,18 @@ class CBottomGroupBar : HBox() {
 
     // region Instance
 
-    private val holder = HBox().apply {
-        hgrow = Priority.ALWAYS
+    private val holder = VBox().apply {
+        vgrow = Priority.ALWAYS
     }
 
     // endregion
 
     init {
-        // 設置樣式以便看到組件邊界
-        style = "-fx-background-color: lightgray; -fx-border-color: gray; -fx-border-width: 1px; -fx-padding: 4px;"
-        prefHeight = 60.0
-        maxHeight = 60.0
+        // 設置右側分組欄樣式：固定寬度，垂直排列
+        style = "-fx-background-color: lightgray; -fx-border-color: gray; -fx-border-width: 1px; -fx-padding: 8px;"
+        prefWidth = 200.0
+        maxWidth = 200.0
+        minWidth = 200.0
         spacing = 8.0  // 添加按鈕間距
         
         groupsProperty.addListener(ListChangeListener {
@@ -106,16 +107,18 @@ class CBottomGroupBar : HBox() {
                 isSelected = false
             }
             
-            // 啟用大字體模式：2倍字體大小、加粗、可換行
+            // 右側分組欄按鈕樣式：固定寬度，單行顯示，大字體
             isLargeFont = true
+            isRightGroupBar = true
             
-            // 設置按鈕的最小和最大尺寸，確保不會超出容器
-            minHeight = 50.0
-            prefHeight = 50.0
-            maxHeight = 50.0
-            minWidth = 80.0
-            prefWidth = 120.0
-            maxWidth = 140.0
+            // 設置按鈕的固定尺寸
+            minHeight = 40.0
+            prefHeight = 40.0
+            maxHeight = 40.0
+            // 移除固定寬度設置，讓CGroup動態計算寬度
+            // minWidth = 180.0
+            // prefWidth = 180.0
+            // maxWidth = 180.0
         }
         children.add(groupId, node)
     }

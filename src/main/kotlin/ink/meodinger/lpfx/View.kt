@@ -131,6 +131,11 @@ class View(private val state: State) : BorderPane() {
     val cBottomGroupBar: CBottomGroupBar = CBottomGroupBar()
 
     /**
+     * Right GroupBar, display TransGroups vertically for quick move functionality
+     */
+    val cRightGroupBar: CRightGroupBar = CRightGroupBar()
+
+    /**
      * LabelPane, display Image & Labels
      */
     val cLabelPane: CLabelPane = CLabelPane(state)
@@ -383,27 +388,26 @@ class View(private val state: State) : BorderPane() {
         center(SplitPane()) {
             orientation = Orientation.HORIZONTAL
 
-            add(BorderPane()) {
-                top(cGroupBar) {
-                    setOnGroupCreate { cTreeMenu.triggerGroupCreate() }
-                }
-                center(cLabelPane) {
-                    initScale = SCALE_INIT
-                    minScale = SCALE_MIN
-                    maxScale = SCALE_MAX
-                    disableProperty().bind(!state.openedProperty())
-                    labelRadiusProperty().bind(Settings.labelRadiusProperty())
-                    labelColorOpacityProperty().bind(Settings.labelColorOpacityProperty())
-                    labelTextOpaqueProperty().bind(Settings.labelTextOpaqueProperty())
-                    labelSelectedStrokeProperty().bind(Settings.labelSelectedStrokeProperty())
-                    newPictureScaleProperty().bind(Settings.newPictureScaleProperty())
-                    useWheelToScaleProperty().bind(Settings.useWheelToScaleProperty())
-                }
-                bottom(VBox()) {
-                    add(cBottomGroupBar) {
-                        disableProperty().bind(!state.openedProperty())
+            add(SplitPane()) {
+                orientation = Orientation.HORIZONTAL
+                
+                add(BorderPane()) {
+                    top(cGroupBar) {
+                        setOnGroupCreate { cTreeMenu.triggerGroupCreate() }
                     }
-                    add(HBox()) {
+                    center(cLabelPane) {
+                        initScale = SCALE_INIT
+                        minScale = SCALE_MIN
+                        maxScale = SCALE_MAX
+                        disableProperty().bind(!state.openedProperty())
+                        labelRadiusProperty().bind(Settings.labelRadiusProperty())
+                        labelColorOpacityProperty().bind(Settings.labelColorOpacityProperty())
+                        labelTextOpaqueProperty().bind(Settings.labelTextOpaqueProperty())
+                        labelSelectedStrokeProperty().bind(Settings.labelSelectedStrokeProperty())
+                        newPictureScaleProperty().bind(Settings.newPictureScaleProperty())
+                        useWheelToScaleProperty().bind(Settings.useWheelToScaleProperty())
+                    }
+                    bottom(HBox()) {
                         add(CTextSlider()) {
                             disableProperty().bind(cLabelPane.disableProperty())
                             initScaleProperty().bind(cLabelPane.initScaleProperty())
@@ -432,6 +436,11 @@ class View(private val state: State) : BorderPane() {
                         }
                     }
                 }
+                add(cRightGroupBar) {
+                    disableProperty().bind(!state.openedProperty())
+                }
+                // Set divider for image and right group bar
+                dividers[0].positionProperty().bindBidirectional(Preference.imageRightGroupBarDividerPositionProperty())
             }
             add(SplitPane()) {
                 orientation = Orientation.VERTICAL

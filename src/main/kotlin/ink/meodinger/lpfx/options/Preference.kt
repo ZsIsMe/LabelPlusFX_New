@@ -52,6 +52,14 @@ object Preference : AbstractProperties("Preference", Options.preference) {
     fun rightDividerPositionProperty(): DoubleProperty = rightDividerPositionProperty
     var rightDividerPosition: Double by rightDividerPositionProperty
 
+    private val rightGroupBarDividerPositionProperty: DoubleProperty = SimpleDoubleProperty(0.75)
+    fun rightGroupBarDividerPositionProperty(): DoubleProperty = rightGroupBarDividerPositionProperty
+    var rightGroupBarDividerPosition: Double by rightGroupBarDividerPositionProperty
+
+    private val imageRightGroupBarDividerPositionProperty: DoubleProperty = SimpleDoubleProperty(0.85)
+    fun imageRightGroupBarDividerPositionProperty(): DoubleProperty = imageRightGroupBarDividerPositionProperty
+    var imageRightGroupBarDividerPosition: Double by imageRightGroupBarDividerPositionProperty
+
     private val textAreaFontProperty: ObjectProperty<Font> = SimpleObjectProperty()
     fun textAreaFontProperty(): ObjectProperty<Font> = textAreaFontProperty
     var textAreaFont: Font by textAreaFontProperty
