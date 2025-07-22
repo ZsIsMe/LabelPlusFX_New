@@ -1520,6 +1520,13 @@ class Controller(private val state: State) {
     }
 
     /**
+     * 导出全部图片带标签
+     */
+    fun exportAllPagesWithLabels() {
+        LabeledImageExporter.exportAllPagesWithLabels(state)
+    }
+
+    /**
      * Backup immediately
      */
     fun emergency(): File? {

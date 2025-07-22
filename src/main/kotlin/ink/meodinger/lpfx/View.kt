@@ -322,6 +322,10 @@ class View(private val state: State) : BorderPane() {
                     does { exportCurrentPageWithLabels() }
                     disableProperty().bind(!state.openedProperty())
                 }
+                item("导出全部图片带标签") {
+                    does { exportAllPagesWithLabels() }
+                    disableProperty().bind(!state.openedProperty())
+                }
             }
             menu(I18N["mm.tools"]) {
                 checkItem(I18N["m.dict"]) {
@@ -821,6 +825,10 @@ class View(private val state: State) : BorderPane() {
 
     private fun exportCurrentPageWithLabels() {
         state.controller.exportCurrentPageWithLabels()
+    }
+    
+    private fun exportAllPagesWithLabels() {
+        state.controller.exportAllPagesWithLabels()
     }
 
     private fun settings() {

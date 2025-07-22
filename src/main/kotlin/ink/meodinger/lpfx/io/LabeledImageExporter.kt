@@ -184,4 +184,96 @@ object LabeledImageExporter {
         
         Logger.info("圖片保存成功，文件大小: ${outputFile.length()} bytes", "LabeledImageExporter")
     }
+
+    /**
+     * 导出全部图片带标签
+     */
+    fun exportAllPagesWithLabels(state: State) {
+        Logger.info("开始导出全部图片带标签", "LabeledImageExporter")
+        
+        try {
+            // 获取当前翻译文件所在目录
+            val currentDir = state.transFile.projectFolder
+            
+            // 创建导出目录
+            val exportDir = currentDir.resolve("export_label_pics")
+            if (!exportDir.exists()) {
+                exportDir.mkdirs()
+            }
+            
+            // 获取所有图片文件
+            val allPicFiles = state.transFile.sortedPicNames.map { picName ->
+                state.transFile.getFile(picName)
+            }.filter { it.exists() }
+            
+            if (allPicFiles.isEmpty()) {
+                showError(state.stage, "没有找到图片文件")
+                return
+            }
+            
+            Logger.info("找到 ${allPicFiles.size} 张图片，开始批量处理", "LabeledImageExporter")
+            
+            var successCount = 0
+            var failedCount = 0
+            val failedFiles = mutableListOf<String>()
+            
+            // 逐张处理图片
+            allPicFiles.forEachIndexed { index, picFile ->
+                try {
+                    Logger.info("处理第 ${index + 1}/${allPicFiles.size} 张图片: ${picFile.name}", "LabeledImageExporter")
+                    
+                    // 获取该图片对应的所有标签
+                    val labelsForPic = state.transFile.getTransList(picFile.name)
+                    
+                    // 创建带标签的图片
+                    val labeledImage = if (labelsForPic.isNotEmpty()) {
+                        createImageWithLabels(picFile, labelsForPic, state)
+                    } else {
+                        // 如果没有标签，创建一个Canvas只包含原图
+                        Logger.info("图片 ${picFile.name} 没有标签，直接复制原图", "LabeledImageExporter")
+                        val originalImage = javafx.scene.image.Image(picFile.toURI().toString())
+                        val canvas = javafx.scene.canvas.Canvas(originalImage.width, originalImage.height)
+                        val gc = canvas.graphicsContext2D
+                        gc.drawImage(originalImage, 0.0, 0.0)
+                        canvas.snapshot(null, null)
+                    }
+                    
+                    // 保存图片
+                    val outputFile = exportDir.resolve(picFile.name)
+                    saveLabeledImage(labeledImage, outputFile)
+                    
+                    successCount++
+                    Logger.info("成功处理图片 ${index + 1}/${allPicFiles.size}: ${picFile.name}", "LabeledImageExporter")
+                    
+                } catch (e: Exception) {
+                    failedCount++
+                    failedFiles.add(picFile.name)
+                    Logger.error("处理图片失败: ${picFile.name}, 错误: ${e.message}", "LabeledImageExporter")
+                }
+            }
+            
+            // 显示完成信息
+            val message = buildString {
+                appendLine("批量导出完成！")
+                appendLine("成功: $successCount 张")
+                if (failedCount > 0) {
+                    appendLine("失败: $failedCount 张")
+                    if (failedFiles.size <= 5) {
+                        appendLine("失败文件: ${failedFiles.joinToString(", ")}")
+                    } else {
+                        appendLine("失败文件: ${failedFiles.take(3).joinToString(", ")} 等...")
+                    }
+                }
+                appendLine("导出目录: ${exportDir.absolutePath}")
+            }
+            
+            Logger.info("批量导出完成，成功: $successCount, 失败: $failedCount", "LabeledImageExporter")
+            showInfo(state.stage, message)
+            
+        } catch (e: Exception) {
+            Logger.error("批量导出失败", "LabeledImageExporter")
+            Logger.exception(e)
+            showError(state.stage, "批量导出失败: ${e.message}")
+        }
+    }
 } 
