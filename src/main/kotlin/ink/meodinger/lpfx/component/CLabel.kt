@@ -21,8 +21,8 @@ import javafx.scene.text.Font
 import javafx.scene.text.FontWeight
 import javafx.scene.text.Text
 import javafx.scene.text.TextBoundsType
-import javafx.animation.ScaleTransition
-import javafx.util.Duration
+import javafx.scene.effect.DropShadow
+import javafx.scene.effect.BlurType
 
 
 /**
@@ -119,16 +119,6 @@ class CLabel(
      */
     var isSelected: Boolean by selectedProperty
 
-    private val scaleFactorProperty: DoubleProperty = SimpleDoubleProperty(1.0)
-    /**
-     * The scale factor for the CLabel when selected
-     */
-    fun scaleFactorProperty(): DoubleProperty = scaleFactorProperty
-    /**
-     * @see scaleFactorProperty
-     */
-    var scaleFactor: Double by scaleFactorProperty
-
     private val groupNameProperty: StringProperty = SimpleStringProperty("")
     /**
      * The name of the group to which the label belongs
@@ -148,6 +138,26 @@ class CLabel(
      * @see groupNameVisibleProperty
      */
     var isGroupNameVisible: Boolean by groupNameVisibleProperty
+
+    private val translationTextProperty: StringProperty = SimpleStringProperty("")
+    /**
+     * The translation text of the label
+     */
+    fun translationTextProperty(): StringProperty = translationTextProperty
+    /**
+     * @see translationTextProperty
+     */
+    var translationText: String by translationTextProperty
+
+    private val translationVisibleProperty: BooleanProperty = SimpleBooleanProperty(false)
+    /**
+     * Whether the translation text is visible
+     */
+    fun translationVisibleProperty(): BooleanProperty = translationVisibleProperty
+    /**
+     * @see translationVisibleProperty
+     */
+    var isTranslationVisible: Boolean by translationVisibleProperty
 
     // endregion
 
@@ -177,23 +187,16 @@ class CLabel(
         private val text = Text()
         private val groupNameText = Text()
         private val groupNamePane = StackPane(groupNameText)
+        private val translationText = Text()
+        private val translationPane = StackPane(translationText)
         private val circle = Circle()
 
         private var clip: Shape = circle // just a placeholder to make type non-null
-
-        private val scaleTransition = ScaleTransition(Duration.millis(200.0), root).apply {
-            cycleCount = 1
-            isAutoReverse = false
-        }
 
         init {
             root.apply {
                 prefWidthProperty().bind(cLabel.pickerRadiusProperty)
                 prefHeightProperty().bind(cLabel.pickerRadiusProperty)
-                
-                // Set initial scale
-                scaleX = cLabel.scaleFactor
-                scaleY = cLabel.scaleFactor
             }
             text.apply {
                 textOrigin = VPos.CENTER
@@ -240,6 +243,21 @@ class CLabel(
                 layoutXProperty().bind(cLabel.pickerRadiusProperty.subtract(widthProperty().divide(2)))
                 layoutYProperty().bind(cLabel.radiusProperty.multiply(2).add(5))
             }
+            translationText.apply {
+                textProperty().bind(cLabel.translationTextProperty())
+                font = Font.font(18.0)  // 設置翻譯文字大小
+                boundsType = TextBoundsType.VISUAL
+                fill = Color.WHITE  // 白色文字
+            }
+            translationPane.apply {
+                padding = Insets(4.0)
+                style = "-fx-background-color: rgba(0,0,0,0.75); -fx-background-radius: 6; -fx-border-color: rgba(255,255,255,0.3); -fx-border-width: 1; -fx-border-radius: 6;"
+                visibleProperty().bind(cLabel.translationVisibleProperty())
+
+                // 將翻譯顯示在 label 的右側
+                layoutXProperty().bind(cLabel.radiusProperty.multiply(2).add(8))
+                layoutYProperty().bind(cLabel.pickerRadiusProperty.subtract(heightProperty().divide(2)))
+            }
 
             // Update
             val updateListener = onChange<Any> {
@@ -255,24 +273,21 @@ class CLabel(
                     ))
                 }
 
-                if(cLabel.isSelected && cLabel.isSelectedStroke) {
-                    // Create a new circle with a stroke
-                    val strokeCircle = Circle().apply {
-                        radiusProperty().bind(cLabel.radiusProperty)
-                        centerXProperty().bind(cLabel.pickerRadiusProperty)
-                        centerYProperty().bind(cLabel.pickerRadiusProperty)
-                        strokeType = StrokeType.OUTSIDE
-                        strokeWidth = 3.0
-                        strokeProperty().bind(Bindings.createObjectBinding(
-                            {
-                                Color.BLACK.opacity(cLabel.colorOpacity)
-                            },cLabel.colorOpacityProperty
-                        ))
-                        fill = Color.TRANSPARENT
+                if(cLabel.isSelected) {
+                    // Create glow effect with label's own color when selected
+                    val glowEffect = DropShadow().apply {
+                        blurType = BlurType.GAUSSIAN
+                        radius = 25.0  // 增大發光範圍
+                        spread = 0.4   // 稍微增加擴散度
+                        color = cLabel.color  // 使用標籤自身的顏色
+                        offsetX = 0.0
+                        offsetY = 0.0
                     }
-                    root.children.setAll(strokeCircle,text, clip, groupNamePane)
+                    clip.effect = glowEffect
+                    root.children.setAll(text, clip, groupNamePane, translationPane)
                 } else {
-                    root.children.setAll(text, clip, groupNamePane)
+                    clip.effect = null
+                    root.children.setAll(text, clip, groupNamePane, translationPane)
                 }
 
 
@@ -280,24 +295,6 @@ class CLabel(
             cLabel.indexProperty.addListener(updateListener)
             cLabel.radiusProperty.addListener(updateListener)
             cLabel.selectedProperty.addListener(updateListener)
-            cLabel.selectedStrokeProperty().addListener(updateListener)
-            
-            // Animate scale factor changes
-            cLabel.scaleFactorProperty.addListener { _, _, newValue ->
-                val targetScale = newValue.toDouble()
-                
-                // Stop any running animation
-                scaleTransition.stop()
-                
-                // Set up the transition
-                scaleTransition.fromX = root.scaleX
-                scaleTransition.fromY = root.scaleY
-                scaleTransition.toX = targetScale
-                scaleTransition.toY = targetScale
-                
-                // Start the animation
-                scaleTransition.play()
-            }
 
             // Manually update the first time
             updateListener.changed(null, null, null)
@@ -308,12 +305,10 @@ class CLabel(
         override fun getNode(): Node = root
 
         override fun dispose() {
-            // Stop any running animation
-            scaleTransition.stop()
-            
             clip.fillProperty().unbind()
             root.children.remove(clip)
             root.children.remove(groupNamePane)
+            root.children.remove(translationPane)
 
             text.textProperty().unbind()
             text.fillProperty().unbind()

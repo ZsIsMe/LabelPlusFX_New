@@ -655,7 +655,7 @@ class CLabelPane(
             // Tooltip
             tooltip = Tooltip().apply {
                 isWrapText = true
-                font = font.s(12.0)  // 減小2個字號
+                font = font.s(18.0)  // 減小2個字號
                 textProperty().bind(transLabel.textProperty())
 
                 // We show and hide it manually
@@ -664,6 +664,9 @@ class CLabelPane(
                 showDuration = Duration.INDEFINITE
                 isAutoHide = false  // 禁用自動隱藏
             }
+
+            // Translation text binding
+            translationTextProperty().bind(transLabel.textProperty())
         }
 
         // Hide text
@@ -884,20 +887,9 @@ class CLabelPane(
         if (!state.isOpened || state.workMode != WorkMode.InputMode) return
         
         for (label in labelNodes) {
-            if (label.tooltip.text.isNotEmpty()) {
-                // 使用與showLabelText相同的邏輯
-                // 計算label中心點在圖像上的像素位置（與LABEL_HOVER事件中的displayX/Y相同）
-                val displayX = label.anchorX + label.radius
-                val displayY = label.anchorY + label.radius
-                
-                val screenBounds = root.localToScreen(root.boundsInLocal)
-                label.tooltip.show(root,
-                    screenBounds.minX + displayX * scale + 8,
-                    screenBounds.minY + displayY * scale + 8,
-                )
-                
-                // 添加到全局追蹤列表
-                state.view.addShowingTooltip(label.tooltip)
+            if (label.translationText.isNotEmpty()) {
+                // 顯示翻譯文本，綁定到 label 上，會跟隨 label 移動
+                label.isTranslationVisible = true
             }
         }
     }
@@ -907,9 +899,7 @@ class CLabelPane(
      */
     fun hideAllLabelText() {
         for (label in labelNodes) {
-            if (label.tooltip.isShowing) {
-                label.tooltip.hide()
-            }
+            label.isTranslationVisible = false
         }
     }
 
@@ -990,14 +980,13 @@ class CLabelPane(
     fun requestRemoveLabels() = labels.forEach(this::removeLabel)
     
     /**
-     * Update all labels' selection states and scale factors based on the provided selected indices
+     * Update all labels' selection states based on the provided selected indices
      * @param selectedIndices Set of label indices that should be selected
      */
     fun updateLabelSelectionStates(selectedIndices: Set<Int>) {
         labelNodes.forEach { label ->
             val isSelected = selectedIndices.contains(label.index)
             label.isSelected = isSelected
-            label.scaleFactor = if (isSelected) 1.5 else 1.0
         }
     }
 

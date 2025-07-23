@@ -657,13 +657,9 @@ class Controller(private val state: State) {
         val handleTranslationsOnPageChangeListener = onChange<Any> { 
             val wasShowingTranslations = view.isShowingAllTranslations()
             
-            // 先全局清理所有tooltip（包括舊頁面的）
-            view.hideAllTooltipsGlobally()
-            
-            // 重置狀態
-            if (view.isShowingAllTranslations()) {
-                view.isShowingAllTranslationsProperty.set(false)
-            }
+            // 重置狀態並隱藏當前翻譯
+            view.isShowingAllTranslationsProperty.set(false)
+            view.cLabelPane.hideAllLabelText()
             
             // If was showing translations, show new page translations after a short delay
             if (wasShowingTranslations && state.workMode == WorkMode.InputMode) {
@@ -675,10 +671,9 @@ class Controller(private val state: State) {
         state.currentPicNameProperty().addListener(handleTranslationsOnPageChangeListener)
         
         val hideTranslationsOnWorkModeChangeListener = onChange<Any> { 
-            // 全局清理所有tooltip
-            view.hideAllTooltipsGlobally()
-            // 重置狀態
+            // 重置狀態並隱藏翻譯
             view.isShowingAllTranslationsProperty.set(false)
+            view.cLabelPane.hideAllLabelText()
         }
         state.workModeProperty().addListener(hideTranslationsOnWorkModeChangeListener)
         Logger.info("Added effect: handle translations when page or work mode changes", "Controller")

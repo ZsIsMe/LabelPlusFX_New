@@ -167,35 +167,9 @@ class View(private val state: State) : BorderPane() {
     val isShowingAllTranslationsProperty = SimpleBooleanProperty(false)
     
     /**
-     * List to track all currently showing tooltips globally
-     */
-    private val showingTooltips = mutableListOf<javafx.scene.control.Tooltip>()
-    
-    /**
      * Public getter for showing all translations property
      */
     fun isShowingAllTranslations(): Boolean = isShowingAllTranslationsProperty.get()
-    
-    /**
-     * Add a tooltip to the global tracking list
-     */
-    fun addShowingTooltip(tooltip: javafx.scene.control.Tooltip) {
-        if (!showingTooltips.contains(tooltip)) {
-            showingTooltips.add(tooltip)
-        }
-    }
-    
-    /**
-     * Hide and clear all tracked tooltips globally
-     */
-    fun hideAllTooltipsGlobally() {
-        for (tooltip in showingTooltips) {
-            if (tooltip.isShowing) {
-                tooltip.hide()
-            }
-        }
-        showingTooltips.clear()
-    }
 
     // Private Components
     private val statsBar: HBox = HBox()
@@ -1158,10 +1132,7 @@ class View(private val state: State) : BorderPane() {
     fun hideAllTranslations() {
         if (!isShowingAllTranslationsProperty.get()) return
         
-        // 全局隱藏所有tooltip
-        hideAllTooltipsGlobally()
-        
-        // 也隱藏當前頁面的翻譯（雙重保險）
+        // 隱藏當前頁面的翻譯
         cLabelPane.hideAllLabelText()
         
         // 重置狀態
