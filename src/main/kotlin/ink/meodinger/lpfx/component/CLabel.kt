@@ -234,7 +234,7 @@ class CLabel(
             }
             groupNamePane.apply {
                 padding = Insets(2.0)
-                style = "-fx-background-color: rgb(240, 240, 240); -fx-background-radius: 4;"
+                style = "-fx-background-color:lightgreen; -fx-background-radius: 4; -fx-border-color: lightgreen; -fx-border-width: 1; -fx-border-radius: 4;"
                 visibleProperty().bind(cLabel.groupNameVisibleProperty())
 
                 layoutXProperty().bind(cLabel.pickerRadiusProperty.subtract(widthProperty().divide(2)))

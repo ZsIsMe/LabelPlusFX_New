@@ -433,7 +433,10 @@ class CLabelPane(
         // NOTE: EventFilter is used to disable scroll when scale
         // NOTE: Horizon scroll use default impl: Shift + Scroll
         addEventFilter(ScrollEvent.SCROLL) {
-            clearAllText()
+            // 如果正在顯示全部翻譯，則不清除文本
+            if (!state.view.isShowingAllTranslations()) {
+                clearAllText()
+            }
         }
 
         // Scale
@@ -646,19 +649,20 @@ class CLabelPane(
             groupNameProperty().bind(transLabel.groupIdProperty().transform { groupId ->
                 state.transFile.groupList.getOrNull(groupId.toInt())?.name ?: ""
             })
-            groupNameVisibleProperty().bind(state.workModeProperty().transform { it == WorkMode.LabelMode })
+            groupNameVisibleProperty().bind(state.workModeProperty().transform { it == WorkMode.InputMode })
 
 
             // Tooltip
             tooltip = Tooltip().apply {
                 isWrapText = true
-                font = font.s(24.0)
+                font = font.s(12.0)  // 減小2個字號
                 textProperty().bind(transLabel.textProperty())
 
                 // We show and hide it manually
                 showDelay = Duration.INDEFINITE
                 hideDelay = Duration.INDEFINITE
                 showDuration = Duration.INDEFINITE
+                isAutoHide = false  // 禁用自動隱藏
             }
         }
 
@@ -871,6 +875,42 @@ class CLabelPane(
     fun clearAllText() {
         canvas.clearGraphicContext()
         for (label in labelNodes) if (label.tooltip.isShowing) label.tooltip.hide()
+    }
+
+    /**
+     * Show all labels' translations at their positions
+     */
+    fun showAllLabelText() {
+        if (!state.isOpened || state.workMode != WorkMode.InputMode) return
+        
+        for (label in labelNodes) {
+            if (label.tooltip.text.isNotEmpty()) {
+                // 使用與showLabelText相同的邏輯
+                // 計算label中心點在圖像上的像素位置（與LABEL_HOVER事件中的displayX/Y相同）
+                val displayX = label.anchorX + label.radius
+                val displayY = label.anchorY + label.radius
+                
+                val screenBounds = root.localToScreen(root.boundsInLocal)
+                label.tooltip.show(root,
+                    screenBounds.minX + displayX * scale + 8,
+                    screenBounds.minY + displayY * scale + 8,
+                )
+                
+                // 添加到全局追蹤列表
+                state.view.addShowingTooltip(label.tooltip)
+            }
+        }
+    }
+
+    /**
+     * Hide all labels' translations
+     */
+    fun hideAllLabelText() {
+        for (label in labelNodes) {
+            if (label.tooltip.isShowing) {
+                label.tooltip.hide()
+            }
+        }
     }
 
     // Layout position

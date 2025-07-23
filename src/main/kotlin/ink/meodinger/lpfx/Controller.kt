@@ -422,7 +422,10 @@ class Controller(private val state: State) {
         }
         cLabelPane.setOnLabelOther  handler@{
             if(state.workMode == WorkMode.InputMode && !it.sourceEvent.isControlDown) {
-                cLabelPane.clearAllText()
+                // 如果正在顯示全部翻譯，則不清除文本
+                if (!view.isShowingAllTranslations()) {
+                    cLabelPane.clearAllText()
+                }
                 return@handler
             }
 
@@ -649,6 +652,36 @@ class Controller(private val state: State) {
         state.currentGroupIdProperty().addListener(clearTextListener)
         state.workModeProperty().addListener(clearTextListener)
         Logger.info("Added effect: clear text when some state change", "Controller")
+
+        // Handle translations when page changes or work mode changes
+        val handleTranslationsOnPageChangeListener = onChange<Any> { 
+            val wasShowingTranslations = view.isShowingAllTranslations()
+            
+            // 先全局清理所有tooltip（包括舊頁面的）
+            view.hideAllTooltipsGlobally()
+            
+            // 重置狀態
+            if (view.isShowingAllTranslations()) {
+                view.isShowingAllTranslationsProperty.set(false)
+            }
+            
+            // If was showing translations, show new page translations after a short delay
+            if (wasShowingTranslations && state.workMode == WorkMode.InputMode) {
+                Platform.runLater {
+                    view.showAllTranslations()
+                }
+            }
+        }
+        state.currentPicNameProperty().addListener(handleTranslationsOnPageChangeListener)
+        
+        val hideTranslationsOnWorkModeChangeListener = onChange<Any> { 
+            // 全局清理所有tooltip
+            view.hideAllTooltipsGlobally()
+            // 重置狀態
+            view.isShowingAllTranslationsProperty.set(false)
+        }
+        state.workModeProperty().addListener(hideTranslationsOnWorkModeChangeListener)
+        Logger.info("Added effect: handle translations when page or work mode changes", "Controller")
 
         // Bind Tree and LabelPane
         cTreeView.addEventHandler(MouseEvent.MOUSE_CLICKED) {
@@ -990,6 +1023,20 @@ class Controller(private val state: State) {
         }
         view.addEventHandler(KeyEvent.KEY_PRESSED, hideLabelHandler)
         Logger.info("Transformed Ctrl/Meta + ;", "Controller")
+
+        // Command+T 快捷鍵：切換顯示/隱藏全部翻譯
+        val toggleAllTranslationsHandler = EventHandler<KeyEvent> handler@{
+            if ((it.isMetaDown || it.isControlDown) && it.code == KeyCode.T) {
+                it.consume()
+                if (view.isShowingAllTranslations()) {
+                    view.hideAllTranslations()
+                } else {
+                    view.showAllTranslations()
+                }
+            }
+        }
+        view.addEventHandler(KeyEvent.KEY_PRESSED, toggleAllTranslationsHandler)
+        Logger.info("Transformed Ctrl/Meta + T", "Controller")
 
 
     }

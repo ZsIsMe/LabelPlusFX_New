@@ -23,6 +23,7 @@ import javafx.animation.Interpolator
 import javafx.animation.KeyFrame
 import javafx.animation.KeyValue
 import javafx.animation.Timeline
+import javafx.beans.binding.Bindings
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.value.ChangeListener
 import javafx.collections.ListChangeListener
@@ -116,6 +117,11 @@ class View(private val state: State) : BorderPane() {
     val bHideLabels: Button = Button()
 
     /**
+     * Show all translations button (long press)
+     */
+    val bShowAllTranslations: Button = Button()
+
+    /**
      * Group ComboBox, change groups
      */
     val cGroupBox: CComboBox<TransGroup> = CComboBox()
@@ -154,6 +160,42 @@ class View(private val state: State) : BorderPane() {
      * Property to track if hide labels functionality is in progress
      */
     private val isHidingLabelsProperty = SimpleBooleanProperty(false)
+
+    /**
+     * Property to track if showing all translations functionality is in progress
+     */
+    val isShowingAllTranslationsProperty = SimpleBooleanProperty(false)
+    
+    /**
+     * List to track all currently showing tooltips globally
+     */
+    private val showingTooltips = mutableListOf<javafx.scene.control.Tooltip>()
+    
+    /**
+     * Public getter for showing all translations property
+     */
+    fun isShowingAllTranslations(): Boolean = isShowingAllTranslationsProperty.get()
+    
+    /**
+     * Add a tooltip to the global tracking list
+     */
+    fun addShowingTooltip(tooltip: javafx.scene.control.Tooltip) {
+        if (!showingTooltips.contains(tooltip)) {
+            showingTooltips.add(tooltip)
+        }
+    }
+    
+    /**
+     * Hide and clear all tracked tooltips globally
+     */
+    fun hideAllTooltipsGlobally() {
+        for (tooltip in showingTooltips) {
+            if (tooltip.isShowing) {
+                tooltip.hide()
+            }
+        }
+        showingTooltips.clear()
+    }
 
     // Private Components
     private val statsBar: HBox = HBox()
@@ -433,6 +475,23 @@ class View(private val state: State) : BorderPane() {
                             text = "隱藏標籤2秒"
                             disableProperty().bind(!state.openedProperty() or isHidingLabelsProperty)
                             does { hideLabelsFor2Seconds() }
+                        }
+                        add(bShowAllTranslations) {
+                            textProperty().bind(Bindings.createStringBinding(
+                                {
+                                    if (isShowingAllTranslationsProperty.get()) "隱藏全部翻譯" else "顯示全部翻譯"
+                                }, isShowingAllTranslationsProperty
+                            ))
+                            disableProperty().bind(!state.openedProperty())
+                            
+                            // 點擊切換顯示/隱藏翻譯
+                            does { 
+                                if (isShowingAllTranslationsProperty.get()) {
+                                    hideAllTranslations()
+                                } else {
+                                    showAllTranslations()
+                                }
+                            }
                         }
                     }
                 }
@@ -1080,6 +1139,34 @@ class View(private val state: State) : BorderPane() {
         timer.play()
     }
 
+    /**
+     * Show all labels' translations
+     */
+    fun showAllTranslations() {
+        if (!state.isOpened || isShowingAllTranslationsProperty.get()) return
+        
+        // 設置顯示狀態
+        isShowingAllTranslationsProperty.set(true)
+        
+        // 顯示所有翻譯
+        cLabelPane.showAllLabelText()
+    }
+
+    /**
+     * Hide all labels' translations
+     */
+    fun hideAllTranslations() {
+        if (!isShowingAllTranslationsProperty.get()) return
+        
+        // 全局隱藏所有tooltip
+        hideAllTooltipsGlobally()
+        
+        // 也隱藏當前頁面的翻譯（雙重保險）
+        cLabelPane.hideAllLabelText()
+        
+        // 重置狀態
+        isShowingAllTranslationsProperty.set(false)
+    }
 }
 
 /**
