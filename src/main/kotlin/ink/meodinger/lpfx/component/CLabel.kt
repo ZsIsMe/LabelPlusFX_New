@@ -254,8 +254,16 @@ class CLabel(
                 style = "-fx-background-color: rgba(0,0,0,0.75); -fx-background-radius: 6; -fx-border-color: rgba(255,255,255,0.3); -fx-border-width: 1; -fx-border-radius: 6;"
                 visibleProperty().bind(cLabel.translationVisibleProperty())
 
-                // 將翻譯顯示在 label 的右側
-                layoutXProperty().bind(cLabel.radiusProperty.multiply(2).add(8))
+                // 根據 index 奇偶性決定翻譯顯示在哪一側
+                layoutXProperty().bind(Bindings.createDoubleBinding({
+                    if (cLabel.index % 2 == 1) {
+                        // 奇數，在右側
+                        cLabel.radius * 2 + 8
+                    } else {
+                        // 偶數，在左側
+                        -width - 8
+                    }
+                }, cLabel.indexProperty(), cLabel.radiusProperty(), widthProperty()))
                 layoutYProperty().bind(cLabel.pickerRadiusProperty.subtract(heightProperty().divide(2)))
             }
 
