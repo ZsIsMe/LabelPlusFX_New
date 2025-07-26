@@ -629,6 +629,7 @@ class CLabelPane(
                     }
                 }
             }
+            updateTranslationsLayout()
         })
         state.currentLabelIndexProperty().addListener { _, oldValue, newValue ->
             labelNodes.firstOrNull{it.index == oldValue}?.isSelected = false
@@ -717,13 +718,16 @@ class CLabelPane(
 
             label.cursor = Cursor.HAND
 
-            if (dragging) fireEvent(LabelEvent(LabelEvent.LABEL_MOVE,
-                it, transLabel.index,
-                label.anchorX + it.x,
-                label.anchorY + it.y,
-                (label.anchorX + label.radius) / image.width,
-                (label.anchorY + label.radius) / image.height,
-            ))
+            if (dragging) {
+                fireEvent(LabelEvent(LabelEvent.LABEL_MOVE,
+                    it, transLabel.index,
+                    label.anchorX + it.x,
+                    label.anchorY + it.y,
+                    (label.anchorX + label.radius) / image.width,
+                    (label.anchorY + label.radius) / image.height,
+                ))
+                updateTranslationsLayout()
+            }
 
             dragging = false
         }
@@ -881,17 +885,17 @@ class CLabelPane(
     }
 
     /**
-     * Show all labels' translations at their positions
+     * Show all labels' translations at their positions and handle overlaps.
      */
     fun showAllLabelText() {
         if (!state.isOpened || state.workMode != WorkMode.InputMode) return
-        
+
         for (label in labelNodes) {
             if (label.translationText.isNotEmpty()) {
-                // 顯示翻譯文本，綁定到 label 上，會跟隨 label 移動
                 label.isTranslationVisible = true
             }
         }
+        updateTranslationsLayout()
     }
 
     /**
@@ -900,6 +904,37 @@ class CLabelPane(
     fun hideAllLabelText() {
         for (label in labelNodes) {
             label.isTranslationVisible = false
+        }
+    }
+
+    private fun updateTranslationsLayout() {
+        val visibleLabels = labelNodes
+            .filter { it.isTranslationVisible && it.translationText.isNotEmpty() }
+            .sortedBy { it.index }
+
+        var lastBounds: javafx.geometry.Bounds? = null
+
+        for (label in visibleLabels) {
+            // Default to right side
+            var layoutX = label.radius * 2 + 8
+            label.translationLayoutX = layoutX
+
+            // Force layout pass to get the correct width/height of translationPane
+            label.applyCss()
+            label.layout()
+
+            val currentBounds = label.localToParent(label.lookup(".translation-pane").boundsInParent)
+
+            if (lastBounds != null && currentBounds.intersects(lastBounds)) {
+                // Overlaps, move to left side
+                val translationPane = label.lookup(".translation-pane")
+                val translationWidth = translationPane.boundsInLocal.width
+                layoutX = -translationWidth - 8
+                label.translationLayoutX = layoutX
+            }
+
+            // Update lastBounds with the new position
+            lastBounds = label.localToParent(label.lookup(".translation-pane").boundsInParent)
         }
     }
 

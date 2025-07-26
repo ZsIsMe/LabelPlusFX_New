@@ -159,6 +159,15 @@ class CLabel(
      */
     var isTranslationVisible: Boolean by translationVisibleProperty
 
+    val translationLayoutXProperty: DoubleProperty = SimpleDoubleProperty(0.0)
+    /**
+     * The layoutX of the translation text pane, relative to the CLabel.
+     * This is intended to be controlled by an external layout manager (e.g., CLabelPane)
+     * to resolve overlaps.
+     */
+    fun translationLayoutXProperty(): DoubleProperty = translationLayoutXProperty
+    var translationLayoutX: Double by translationLayoutXProperty
+
     // endregion
 
     // region Privates
@@ -250,20 +259,13 @@ class CLabel(
                 fill = Color.WHITE  // 白色文字
             }
             translationPane.apply {
+                styleClass.add("translation-pane")
                 padding = Insets(4.0)
                 style = "-fx-background-color: rgba(0,0,0,0.75); -fx-background-radius: 6; -fx-border-color: rgba(255,255,255,0.3); -fx-border-width: 1; -fx-border-radius: 6;"
                 visibleProperty().bind(cLabel.translationVisibleProperty())
 
-                // 根據 index 奇偶性決定翻譯顯示在哪一側
-                layoutXProperty().bind(Bindings.createDoubleBinding({
-                    if (cLabel.index % 2 == 1) {
-                        // 奇數，在右側
-                        cLabel.radius * 2 + 8
-                    } else {
-                        // 偶數，在左側
-                        -width - 8
-                    }
-                }, cLabel.indexProperty(), cLabel.radiusProperty(), widthProperty()))
+                // X position is now controlled externally to handle overlaps
+                layoutXProperty().bind(cLabel.translationLayoutXProperty)
                 layoutYProperty().bind(cLabel.pickerRadiusProperty.subtract(heightProperty().divide(2)))
             }
 

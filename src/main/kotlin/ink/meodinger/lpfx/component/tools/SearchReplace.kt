@@ -22,6 +22,7 @@ import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.StackPane
+import javafx.scene.layout.VBox
 import javafx.stage.Stage
 
 /**
@@ -53,7 +54,7 @@ class SearchReplace(private val state: State) : Stage() {
         icons.add(ICON)
         title = I18N["snr.title"]
         width = 500.0
-        height = 200.0
+        height = 280.0
         isResizable = false
         scene = Scene(StackPane().withContent(GridPane()) {
             padding = Insets(16.0)
@@ -89,25 +90,40 @@ class SearchReplace(private val state: State) : Stage() {
                 ignoreCaseProperty.bind(selectedProperty())
             }
 
-            add(Button(I18N["snr.find_next"]), 2, 0) {
-                prefWidth = BUTTON_WIDTH
-                disableProperty().bind(searchTextProperty.isEmpty)
-                setOnAction { handleFindNext() }
-            }
-            add(Button(I18N["snr.replace"]), 2, 1) {
-                prefWidth = BUTTON_WIDTH
-                disableProperty().bind(searchTextProperty.isEmpty)
-                setOnAction { handleReplace() }
-            }
-            add(Button(I18N["snr.replace_all"]), 2, 2) {
-                prefWidth = BUTTON_WIDTH
-                disableProperty().bind(searchTextProperty.isEmpty)
-                setOnAction { handleReplaceAll() }
-            }
-            add(Button(I18N["common.cancel"]), 2, 3) {
-                prefWidth = BUTTON_WIDTH
-                setOnAction { hide() }
-            }
+            add(VBox(8.0).apply {
+                alignment = Pos.TOP_CENTER
+                children.add(Button(I18N["snr.find_next"]).apply {
+                    prefWidth = BUTTON_WIDTH
+                    disableProperty().bind(searchTextProperty.isEmpty)
+                    setOnAction { handleFindNext() }
+                })
+                children.add(Button(I18N["snr.replace"]).apply {
+                    prefWidth = BUTTON_WIDTH
+                    disableProperty().bind(searchTextProperty.isEmpty)
+                    setOnAction { handleReplace() }
+                })
+                children.add(Button(I18N["snr.replace_all"]).apply {
+                    prefWidth = BUTTON_WIDTH
+                    disableProperty().bind(searchTextProperty.isEmpty)
+                    setOnAction { handleReplaceAll() }
+                })
+                children.add(Button("修正波浪號").apply {
+                    prefWidth = BUTTON_WIDTH
+                    setOnAction { handleFixTildes() }
+                })
+                children.add(Button("全部’～->~").apply {
+                    prefWidth = BUTTON_WIDTH
+                    setOnAction { handleReplaceFullWidthTilde() }
+                })
+                children.add(Button("!->！").apply {
+                    prefWidth = BUTTON_WIDTH
+                    setOnAction { handleReplaceExclamation() }
+                })
+                children.add(Button(I18N["common.cancel"]).apply {
+                    prefWidth = BUTTON_WIDTH
+                    setOnAction { hide() }
+                })
+            }, 2, 0, 1, 4)
         })
 
         closeOnEscape()
@@ -193,6 +209,92 @@ class SearchReplace(private val state: State) : Stage() {
         } else {
             state.doAction(ComplexAction(actions))
             showInfo(this@SearchReplace, String.format(I18N["snr.replace_count.i"], count))
+        }
+    }
+
+    private fun handleFixTildes() {
+        var count = 0
+        val actions = ArrayList<LabelAction>()
+        val regex = Regex("~+")
+
+        for (picName in state.transFile.sortedPicNames) {
+            for (label in state.transFile.getTransList(picName)) {
+                val originalText = label.text
+                if (!originalText.contains("~")) continue
+
+                val newText = regex.replace(originalText) { matchResult ->
+                    val tildes = matchResult.value
+                    if (tildes.length % 2 != 0) {
+                        "$tildes~"
+                    } else {
+                        tildes
+                    }
+                }
+
+                if (originalText != newText) {
+                    count++
+                    actions.add(LabelAction(ActionType.CHANGE, state, picName, label, newText = newText))
+                }
+            }
+        }
+
+        if (count == 0) {
+            showInfo(this@SearchReplace, "沒有找到需要修正的波浪號。")
+        } else {
+            state.doAction(ComplexAction(actions))
+            showInfo(this@SearchReplace, "已修正 $count 個標籤中的波浪號。")
+        }
+    }
+
+    private fun handleReplaceFullWidthTilde() {
+        var count = 0
+        val actions = ArrayList<LabelAction>()
+
+        for (picName in state.transFile.sortedPicNames) {
+            for (label in state.transFile.getTransList(picName)) {
+                val originalText = label.text
+                if (!originalText.contains("～")) continue
+
+                val newText = originalText.replace("～", "~")
+
+                if (originalText != newText) {
+                    count++
+                    actions.add(LabelAction(ActionType.CHANGE, state, picName, label, newText = newText))
+                }
+            }
+        }
+
+        if (count == 0) {
+            showInfo(this@SearchReplace, "沒有找到需要替換的全形波浪號。")
+        } else {
+            state.doAction(ComplexAction(actions))
+            showInfo(this@SearchReplace, "已替換 $count 個標籤中的全形波浪號。")
+        }
+    }
+
+    private fun handleReplaceExclamation() {
+        var count = 0
+        val actions = ArrayList<LabelAction>()
+
+        for (picName in state.transFile.sortedPicNames) {
+            for (label in state.transFile.getTransList(picName)) {
+                val originalText = label.text
+                if (!originalText.contains("!")) continue
+
+                val newText = originalText.replace("!", "！")
+
+                if (originalText != newText) {
+                    count++
+                    actions.add(LabelAction(ActionType.CHANGE, state, picName, label, newText = newText))
+                }
+            }
+        }
+
+        if (count == 0) {
+            showInfo(this@SearchReplace, "沒有找到需要替換的半形驚嘆號。")
+        } else {
+            state.doAction(ComplexAction(actions))
+            showInfo(this@SearchReplace, "已替換 $count 個標籤中的半形驚嘆號。")
         }
     }
 
