@@ -44,6 +44,7 @@ import javafx.embed.swing.SwingFXUtils
 import javafx.event.EventHandler
 import javafx.event.ActionEvent
 import javafx.geometry.Insets
+import javafx.geometry.Orientation
 import javafx.scene.Cursor
 import javafx.scene.control.*
 import javafx.scene.image.Image
@@ -523,6 +524,15 @@ class Controller(private val state: State) {
             }
         })
         Logger.info("Bound CLabelPane properties", "Controller")
+
+        cBottomGroupBar.setOnToggleTranslation { event ->
+            val toggleButton = event.source as ToggleButton
+            val newOrientation = if (toggleButton.isSelected) Orientation.VERTICAL else Orientation.HORIZONTAL
+            cLabelPane.labelNodes.forEach { cLabel ->
+                cLabel.translationOrientation = newOrientation
+            }
+        }
+        Logger.info("Bound CBottomGroupBar ToggleTranslation", "Controller")
     }
     /**
      * Properties' listeners (for unbindable)

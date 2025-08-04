@@ -11,6 +11,7 @@ import javafx.beans.property.*
 import javafx.collections.*
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
+import javafx.scene.control.ToggleButton
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.paint.Color
@@ -53,12 +54,32 @@ class CBottomGroupBar : HBox() {
      */
     fun setOnGroupMove(handler: EventHandler<ActionEvent>) = onGroupMoveProperty.set(handler)
 
+    private val onToggleTranslationProperty: ObjectProperty<EventHandler<ActionEvent>> = SimpleObjectProperty(EventHandler {})
+    /**
+     * How to handle translation orientation toggle
+     */
+    fun onToggleTranslationProperty(): ObjectProperty<EventHandler<ActionEvent>> = onToggleTranslationProperty
+    fun setOnToggleTranslation(handler: EventHandler<ActionEvent>) = onToggleTranslationProperty.set(handler)
+    val onToggleTranslation: EventHandler<ActionEvent> by onToggleTranslationProperty
+
+
     // endregion
 
     // region Instance
 
     private val holder = HBox().apply {
         hgrow = Priority.ALWAYS
+    }
+    
+    val toggleTranslationButton = ToggleButton("垂直翻譯").apply {
+        minHeight = 50.0
+        prefHeight = 50.0
+        maxHeight = 50.0
+        setOnAction { event ->
+            // Pass the button's selected state as the source
+            val actionEvent = ActionEvent(this, event.target)
+            onToggleTranslation.handle(actionEvent)
+        }
     }
 
     // endregion
@@ -69,6 +90,9 @@ class CBottomGroupBar : HBox() {
         prefHeight = 60.0
         maxHeight = 60.0
         spacing = 8.0  // 添加按鈕間距
+        
+        children.add(toggleTranslationButton)
+
         
         groupsProperty.addListener(ListChangeListener {
             while (it.next()) {

@@ -629,7 +629,7 @@ class CLabelPane(
                     }
                 }
             }
-            updateTranslationsLayout()
+            updateAuxiliaryTranslationsLayout()
         })
         state.currentLabelIndexProperty().addListener { _, oldValue, newValue ->
             labelNodes.firstOrNull{it.index == oldValue}?.isSelected = false
@@ -666,8 +666,11 @@ class CLabelPane(
                 isAutoHide = false  // 禁用自動隱藏
             }
 
-            // Translation text binding
-            translationTextProperty().bind(transLabel.textProperty())
+            // Auxiliary and Placeholder text binding
+            auxiliaryTextProperty().bind(transLabel.textProperty())
+            placeholderTextProperty().bind(transLabel.textProperty())
+            // For now, let's make the placeholder always visible when the label is created
+            isPlaceholderVisible = true
         }
 
         // Hide text
@@ -726,7 +729,7 @@ class CLabelPane(
                     (label.anchorX + label.radius) / image.width,
                     (label.anchorY + label.radius) / image.height,
                 ))
-                updateTranslationsLayout()
+                updateAuxiliaryTranslationsLayout()
             }
 
             dragging = false
@@ -891,11 +894,12 @@ class CLabelPane(
         if (!state.isOpened || state.workMode != WorkMode.InputMode) return
 
         for (label in labelNodes) {
-            if (label.translationText.isNotEmpty()) {
-                label.isTranslationVisible = true
+            if (label.auxiliaryText.isNotEmpty()) {
+                label.isAuxiliaryVisible = true
+                label.isPlaceholderVisible = true
             }
         }
-        updateTranslationsLayout()
+        updateAuxiliaryTranslationsLayout()
     }
 
     /**
@@ -903,38 +907,40 @@ class CLabelPane(
      */
     fun hideAllLabelText() {
         for (label in labelNodes) {
-            label.isTranslationVisible = false
+            label.isAuxiliaryVisible = false
+            label.isPlaceholderVisible = false
         }
     }
 
-    private fun updateTranslationsLayout() {
+    private fun updateAuxiliaryTranslationsLayout() {
         val visibleLabels = labelNodes
-            .filter { it.isTranslationVisible && it.translationText.isNotEmpty() }
+            .filter { it.isAuxiliaryVisible && it.auxiliaryText.isNotEmpty() }
             .sortedBy { it.index }
 
         var lastBounds: javafx.geometry.Bounds? = null
 
         for (label in visibleLabels) {
-            // Default to right side
-            var layoutX = label.radius * 2 + 8
-            label.translationLayoutX = layoutX
+            // Default to right side, with a larger gap
+            val gap = 40.0
+            var layoutX = label.radius * 2 + gap
+            label.auxiliaryLayoutX = layoutX
 
             // Force layout pass to get the correct width/height of translationPane
             label.applyCss()
             label.layout()
 
-            val currentBounds = label.localToParent(label.lookup(".translation-pane").boundsInParent)
+            val currentBounds = label.localToParent(label.lookup(".auxiliary-pane").boundsInParent)
 
             if (lastBounds != null && currentBounds.intersects(lastBounds)) {
                 // Overlaps, move to left side
-                val translationPane = label.lookup(".translation-pane")
+                val translationPane = label.lookup(".auxiliary-pane")
                 val translationWidth = translationPane.boundsInLocal.width
-                layoutX = -translationWidth - 8
-                label.translationLayoutX = layoutX
+                layoutX = -translationWidth - gap
+                label.auxiliaryLayoutX = layoutX
             }
 
             // Update lastBounds with the new position
-            lastBounds = label.localToParent(label.lookup(".translation-pane").boundsInParent)
+            lastBounds = label.localToParent(label.lookup(".auxiliary-pane").boundsInParent)
         }
     }
 

@@ -7,6 +7,7 @@ import ink.meodinger.lpfx.util.property.*
 import javafx.beans.binding.Bindings
 import javafx.beans.property.*
 import javafx.geometry.Insets
+import javafx.geometry.Orientation
 import javafx.geometry.VPos
 import javafx.scene.Node
 import javafx.scene.control.Control
@@ -139,34 +140,65 @@ class CLabel(
      */
     var isGroupNameVisible: Boolean by groupNameVisibleProperty
 
-    private val translationTextProperty: StringProperty = SimpleStringProperty("")
+    private val auxiliaryTextProperty: StringProperty = SimpleStringProperty("")
     /**
-     * The translation text of the label
+     * The auxiliary proofreading text of the label.
      */
-    fun translationTextProperty(): StringProperty = translationTextProperty
+    fun auxiliaryTextProperty(): StringProperty = auxiliaryTextProperty
     /**
-     * @see translationTextProperty
+     * @see auxiliaryTextProperty
      */
-    var translationText: String by translationTextProperty
+    var auxiliaryText: String by auxiliaryTextProperty
 
-    private val translationVisibleProperty: BooleanProperty = SimpleBooleanProperty(false)
+    private val auxiliaryVisibleProperty: BooleanProperty = SimpleBooleanProperty(false)
     /**
-     * Whether the translation text is visible
+     * Whether the auxiliary proofreading text is visible.
      */
-    fun translationVisibleProperty(): BooleanProperty = translationVisibleProperty
+    fun auxiliaryVisibleProperty(): BooleanProperty = auxiliaryVisibleProperty
     /**
-     * @see translationVisibleProperty
+     * @see auxiliaryVisibleProperty
      */
-    var isTranslationVisible: Boolean by translationVisibleProperty
+    var isAuxiliaryVisible: Boolean by auxiliaryVisibleProperty
 
-    val translationLayoutXProperty: DoubleProperty = SimpleDoubleProperty(0.0)
+    private val translationOrientationProperty: ObjectProperty<Orientation> = SimpleObjectProperty(Orientation.VERTICAL)
     /**
-     * The layoutX of the translation text pane, relative to the CLabel.
+     * The orientation of the translation text. Can be either horizontal or vertical.
+     */
+    fun translationOrientationProperty(): ObjectProperty<Orientation> = translationOrientationProperty
+    /**
+     * @see translationOrientationProperty
+     */
+    var translationOrientation: Orientation by translationOrientationProperty
+
+    val auxiliaryLayoutXProperty: DoubleProperty = SimpleDoubleProperty(0.0)
+    /**
+     * The layoutX of the auxiliary proofreading text pane, relative to the CLabel.
      * This is intended to be controlled by an external layout manager (e.g., CLabelPane)
      * to resolve overlaps.
      */
-    fun translationLayoutXProperty(): DoubleProperty = translationLayoutXProperty
-    var translationLayoutX: Double by translationLayoutXProperty
+    fun auxiliaryLayoutXProperty(): DoubleProperty = auxiliaryLayoutXProperty
+    var auxiliaryLayoutX: Double by auxiliaryLayoutXProperty
+
+    private val placeholderTextProperty: StringProperty = SimpleStringProperty("")
+    /**
+     * The placeholder text of the label, displayed in the center.
+     */
+    fun placeholderTextProperty(): StringProperty = placeholderTextProperty
+    /**
+     * @see placeholderTextProperty
+     */
+    var placeholderText: String by placeholderTextProperty
+
+    private val placeholderVisibleProperty: BooleanProperty = SimpleBooleanProperty(false)
+    /**
+     * Whether the placeholder text is visible.
+     */
+    fun placeholderVisibleProperty(): BooleanProperty = placeholderVisibleProperty
+    /**
+     * @see placeholderVisibleProperty
+     */
+    var isPlaceholderVisible: Boolean by placeholderVisibleProperty
+
 
     // endregion
 
@@ -196,8 +228,10 @@ class CLabel(
         private val text = Text()
         private val groupNameText = Text()
         private val groupNamePane = StackPane(groupNameText)
-        private val translationText = Text()
-        private val translationPane = StackPane(translationText)
+        private val auxiliaryText = Text()
+        private val auxiliaryPane = StackPane(auxiliaryText)
+        private val placeholderText = Text()
+        private val placeholderPane = StackPane(placeholderText)
         private val circle = Circle()
 
         private var clip: Shape = circle // just a placeholder to make type non-null
@@ -250,24 +284,56 @@ class CLabel(
                 visibleProperty().bind(cLabel.groupNameVisibleProperty())
 
                 layoutXProperty().bind(cLabel.pickerRadiusProperty.subtract(widthProperty().divide(2)))
-                layoutYProperty().bind(cLabel.radiusProperty.multiply(2).add(5))
+                layoutYProperty().bind(cLabel.radiusProperty.multiply(2).add(55))
             }
-            translationText.apply {
-                textProperty().bind(cLabel.translationTextProperty())
-                font = Font.font(18.0)  // 設置翻譯文字大小
+            
+            // Auxiliary Proofreading Translation (on the side)
+            auxiliaryText.apply {
+                textProperty().bind(cLabel.auxiliaryTextProperty)
+                font = Font.font(18.0)
                 boundsType = TextBoundsType.VISUAL
-                fill = Color.WHITE  // 白色文字
+                fill = Color.WHITE
             }
-            translationPane.apply {
-                styleClass.add("translation-pane")
+                        auxiliaryPane.apply {
+                styleClass.add("auxiliary-pane") // Use a unique style class
                 padding = Insets(4.0)
                 style = "-fx-background-color: rgba(0,0,0,0.75); -fx-background-radius: 6; -fx-border-color: rgba(255,255,255,0.3); -fx-border-width: 1; -fx-border-radius: 6;"
-                visibleProperty().bind(cLabel.translationVisibleProperty())
+                visibleProperty().bind(cLabel.auxiliaryVisibleProperty())
 
-                // X position is now controlled externally to handle overlaps
-                layoutXProperty().bind(cLabel.translationLayoutXProperty)
+                // Layout logic for side-positioning (adjustable X)
+                layoutXProperty().bind(cLabel.auxiliaryLayoutXProperty)
                 layoutYProperty().bind(cLabel.pickerRadiusProperty.subtract(heightProperty().divide(2)))
             }
+
+            // Placeholder Translation (in the center)
+            placeholderText.apply {
+                textProperty().bind(cLabel.placeholderTextProperty())
+                font = Font.font(18.0)
+                boundsType = TextBoundsType.VISUAL
+                fill = Color.WHITE
+            }
+            placeholderPane.apply {
+                styleClass.add("placeholder-pane")
+                padding = Insets(4.0)
+                style = "-fx-background-color: rgba(20, 20, 40, 0.85); -fx-background-radius: 6; -fx-border-color: lightblue; -fx-border-width: 1; -fx-border-radius: 6;"
+                visibleProperty().bind(cLabel.placeholderVisibleProperty())
+                
+                // Dynamic layout for centered positioning and rotation
+                fun updatePlaceholderLayout() {
+                    if (cLabel.translationOrientation == Orientation.VERTICAL) {
+                        rotate = 90.0
+                    } else {
+                        rotate = 0.0
+                    }
+                    // Always centered on the label's circle
+                    layoutXProperty().bind(cLabel.pickerRadiusProperty.subtract(widthProperty().divide(2)))
+                    layoutYProperty().bind(cLabel.pickerRadiusProperty.subtract(heightProperty().divide(2)))
+                }
+                
+                cLabel.translationOrientationProperty().addListener { _ -> updatePlaceholderLayout() }
+                updatePlaceholderLayout() // Initial setup
+            }
+
 
             // Update
             val updateListener = onChange<Any> {
@@ -294,10 +360,12 @@ class CLabel(
                         offsetY = 0.0
                     }
                     clip.effect = glowEffect
-                    root.children.setAll(text, clip, groupNamePane, translationPane)
+                    // Draw placeholderPane first, so it's in the background
+                    root.children.setAll(placeholderPane, text, clip, groupNamePane, auxiliaryPane)
                 } else {
                     clip.effect = null
-                    root.children.setAll(text, clip, groupNamePane, translationPane)
+                    // Draw placeholderPane first, so it's in the background
+                    root.children.setAll(placeholderPane, text, clip, groupNamePane, auxiliaryPane)
                 }
 
 
@@ -318,7 +386,8 @@ class CLabel(
             clip.fillProperty().unbind()
             root.children.remove(clip)
             root.children.remove(groupNamePane)
-            root.children.remove(translationPane)
+            root.children.remove(auxiliaryPane)
+            root.children.remove(placeholderPane)
 
             text.textProperty().unbind()
             text.fillProperty().unbind()
