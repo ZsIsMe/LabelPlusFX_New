@@ -373,7 +373,6 @@ class CLabel(
                                     val charText = Text(displayChar).apply {
                                         this.font = font
                                         boundsType = TextBoundsType.VISUAL
-                                        this.style = "-fx-text-alignment: center;"
                                         fill = Color.WHITE    
                                     }
                                     columnBox.children.add(charText)
