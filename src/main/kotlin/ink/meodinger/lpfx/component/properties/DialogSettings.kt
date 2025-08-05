@@ -100,7 +100,8 @@ class DialogSettings : AbstractPropertiesDialog() {
     private val lCheckSelectedStroke = CheckBox(I18N["settings.label.selected_stroke"])
 
     private val xUseSWPrism = CheckBox(I18N["settings.other.use_sw_prism"])
-    private val xCheckUpdate = CheckBox(I18N["settings.other.auto_check_upd"])
+    // 自動升級檢查功能已停用
+    // private val xCheckUpdate = CheckBox(I18N["settings.other.auto_check_upd"])
     private val xCheckAutoOp = CheckBox(I18N["settings.other.auto_open_last"])
     private val xCheckInstTr = CheckBox(I18N["settings.other.inst_trans"])
     private val xCheckFormat = CheckBox(I18N["settings.other.check_format"])
@@ -432,13 +433,13 @@ class DialogSettings : AbstractPropertiesDialog() {
                     // 10 Translate_keys.app_id
 
                     add(xUseSWPrism, 0, 0, 2, 1)
-                    add(xCheckUpdate, 0, 1, 2, 1)
-                    add(xCheckAutoOp, 0, 2, 2, 1)
-                    add(xCheckInstTr, 0, 3, 2, 1)
-                    add(xCheckFormat, 0, 4, 2, 1)
-                    add(xCheckUseMeo, 0, 5, 2, 1)
-                    add(xCheckUseTmp, 0, 6, 2, 1)
-                    add(xFieldTemplate, 1, 7) {
+                    // add(xCheckUpdate, 0, 1, 2, 1)  // 自動升級檢查功能已停用
+                    add(xCheckAutoOp, 0, 1, 2, 1)  // 調整行位置
+                    add(xCheckInstTr, 0, 2, 2, 1)  // 調整行位置
+                    add(xCheckFormat, 0, 3, 2, 1)  // 調整行位置
+                    add(xCheckUseMeo, 0, 4, 2, 1)  // 調整行位置
+                    add(xCheckUseTmp, 0, 5, 2, 1)  // 調整行位置
+                    add(xFieldTemplate, 1, 6) {  // 調整行位置
                         disableProperty().bind(!xCheckUseTmp.selectedProperty())
                         textFormatter = genTextFormatter<String> { it.text.replace(Regex("[:*?<>|/\"\\\\]"), "") }
                         tooltip = Tooltip(I18N["settings.other.template.hint"]).apply {
@@ -651,7 +652,7 @@ class DialogSettings : AbstractPropertiesDialog() {
 
         // Other
         xUseSWPrism.isSelected  = Settings.useSWPrism
-        xCheckUpdate.isSelected = Settings.autoCheckUpdate
+        // xCheckUpdate.isSelected = Settings.autoCheckUpdate  // 自動升級檢查功能已停用
         xCheckAutoOp.isSelected = Settings.autoOpenLastFile
         xCheckInstTr.isSelected = Settings.instantTranslate
         xCheckFormat.isSelected = Settings.checkFormatWhenSave
@@ -760,7 +761,7 @@ class DialogSettings : AbstractPropertiesDialog() {
         val map = HashMap<String, Any>()
 
         map[Settings.UseSWPrism] = xUseSWPrism.isSelected
-        map[Settings.AutoCheckUpdate] = xCheckUpdate.isSelected
+        // map[Settings.AutoCheckUpdate] = xCheckUpdate.isSelected  // 自動升級檢查功能已停用
         map[Settings.AutoOpenLastFile] = xCheckAutoOp.isSelected
         map[Settings.InstantTranslate] = xCheckInstTr.isSelected
         map[Settings.CheckFormatWhenSave] = xCheckFormat.isSelected

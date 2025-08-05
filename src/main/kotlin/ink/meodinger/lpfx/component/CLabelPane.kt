@@ -669,6 +669,14 @@ class CLabelPane(
             // Auxiliary and Placeholder text binding
             auxiliaryTextProperty().bind(transLabel.textProperty())
             placeholderTextProperty().bind(transLabel.textProperty())
+
+            // Group-specific font size and text direction for placeholder
+            val group = state.transFile.groupList.getOrNull(transLabel.groupId)
+            if (group != null) {
+                groupFontSize = group.fontSize
+                groupTextDirection = group.textDirection
+            }
+            
             // For now, let's make the placeholder always visible when the label is created
             isPlaceholderVisible = true
         }

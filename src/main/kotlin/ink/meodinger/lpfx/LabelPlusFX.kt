@@ -220,8 +220,8 @@ class LabelPlusFX: HookedApplication() {
 
         // region Post-Start Operations
 
-        // Check update
-        if (PARAM_UNNAMED_NO_CHECK_UPDATE !in parameters.unnamed) if (Settings.autoCheckUpdate) controller.checkUpdate()
+        // Check update - 已註釋，不再自動檢查升級
+        // if (PARAM_UNNAMED_NO_CHECK_UPDATE !in parameters.unnamed) if (Settings.autoCheckUpdate) controller.checkUpdate()
         // Open file
         if (parameters.raw.isNotEmpty() && File(parameters.raw.last()).isFile) {
             // Open the given file

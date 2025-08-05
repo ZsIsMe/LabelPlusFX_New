@@ -1631,10 +1631,13 @@ class Controller(private val state: State) {
     }
 
     /**
-     * Start a new LPFX task to check and show update info
+     * Start a new LPFX task to check and show update info - 已停用
      * @param showWhenUpdated If true, show info if already updated
      */
     fun checkUpdate(showWhenUpdated: Boolean = false) {
+        // 升級檢查功能已註釋，直接返回
+        return
+        /*
         Logger.info("begin check Update，Current version is $V", "Controller")
         val release = INFO["checkUpdate.downloadUrl"]
         val delay = 1000 * 60 * 24 * 30L
@@ -1684,6 +1687,7 @@ class Controller(private val state: State) {
                 }
             }
         }()
+        */
     }
     private fun fetchLatestSync(): Version {
         val api = INFO["checkUpdate.versionUrl"]

@@ -389,9 +389,10 @@ class View(private val state: State) : BorderPane() {
                 item(I18N["m.about"]) {
                     does { about() }
                 }
-                item(I18N["m.update"]) {
-                    does { checkUpdate() }
-                }
+                // 升級檢查功能已註釋
+                // item(I18N["m.update"]) {
+                //     does { checkUpdate() }
+                // }
                 item(I18N["m.cheat"]) {
                     does { cheatSheet() }
                 }

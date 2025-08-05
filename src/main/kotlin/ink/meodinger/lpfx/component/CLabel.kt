@@ -14,6 +14,8 @@ import javafx.scene.control.Control
 import javafx.scene.control.Skin
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
+import javafx.scene.layout.VBox
+import javafx.scene.layout.HBox
 import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.scene.shape.Shape
@@ -199,6 +201,14 @@ class CLabel(
      */
     var isPlaceholderVisible: Boolean by placeholderVisibleProperty
 
+    private val groupFontSizeProperty = SimpleDoubleProperty(-1.0)
+    fun groupFontSizeProperty(): DoubleProperty = groupFontSizeProperty
+    var groupFontSize: Double by groupFontSizeProperty
+
+    private val groupTextDirectionProperty = SimpleStringProperty("horizontal")
+    fun groupTextDirectionProperty(): StringProperty = groupTextDirectionProperty
+    var groupTextDirection: String by groupTextDirectionProperty
+
 
     // endregion
 
@@ -230,8 +240,8 @@ class CLabel(
         private val groupNamePane = StackPane(groupNameText)
         private val auxiliaryText = Text()
         private val auxiliaryPane = StackPane(auxiliaryText)
-        private val placeholderText = Text()
-        private val placeholderPane = StackPane(placeholderText)
+        private val placeholderContainer = HBox() // 用於水平排列多列
+        private val placeholderPane = StackPane(placeholderContainer)
         private val circle = Circle()
 
         private var clip: Shape = circle // just a placeholder to make type non-null
@@ -284,7 +294,12 @@ class CLabel(
                 visibleProperty().bind(cLabel.groupNameVisibleProperty())
 
                 layoutXProperty().bind(cLabel.pickerRadiusProperty.subtract(widthProperty().divide(2)))
-                layoutYProperty().bind(cLabel.radiusProperty.multiply(2).add(55))
+                // 在占位翻譯的正下方，留10像素間隙
+                layoutYProperty().bind(
+                    placeholderPane.layoutYProperty()
+                        .add(placeholderPane.heightProperty())
+                        .add(10)
+                )
             }
             
             // Auxiliary Proofreading Translation (on the side)
@@ -298,7 +313,8 @@ class CLabel(
                 styleClass.add("auxiliary-pane") // Use a unique style class
                 padding = Insets(4.0)
                 style = "-fx-background-color: rgba(0,0,0,0.75); -fx-background-radius: 6; -fx-border-color: rgba(255,255,255,0.3); -fx-border-width: 1; -fx-border-radius: 6;"
-                visibleProperty().bind(cLabel.auxiliaryVisibleProperty())
+                // 先隱藏輔助翻譯，不再展示
+                isVisible = false
 
                 // Layout logic for side-positioning (adjustable X)
                 layoutXProperty().bind(cLabel.auxiliaryLayoutXProperty)
@@ -306,32 +322,102 @@ class CLabel(
             }
 
             // Placeholder Translation (in the center)
-            placeholderText.apply {
-                textProperty().bind(cLabel.placeholderTextProperty())
-                font = Font.font(18.0)
-                boundsType = TextBoundsType.VISUAL
-                fill = Color.WHITE
-            }
+            // 設置容器間距
+            placeholderContainer.spacing = 2.0
+            
             placeholderPane.apply {
                 styleClass.add("placeholder-pane")
                 padding = Insets(4.0)
                 style = "-fx-background-color: rgba(20, 20, 40, 0.85); -fx-background-radius: 6; -fx-border-color: lightblue; -fx-border-width: 1; -fx-border-radius: 6;"
                 visibleProperty().bind(cLabel.placeholderVisibleProperty())
-                
-                // Dynamic layout for centered positioning and rotation
-                fun updatePlaceholderLayout() {
-                    if (cLabel.translationOrientation == Orientation.VERTICAL) {
-                        rotate = 90.0
+
+                // 動態更新文字排列
+                fun updatePlaceholderText() {
+                    placeholderContainer.children.clear()
+                    
+                    // 預處理文本：替換雙省略號
+                    val preprocessedText = cLabel.placeholderText
+                        .replace("……", "︙︙")  // 雙省略號替換為雙竪排省略號
+                    
+                    if (preprocessedText.isEmpty()) return
+                    
+                    val fontSize = if (cLabel.groupFontSize > 0) cLabel.groupFontSize else 18.0
+                    val font = Font.font(fontSize / 0.75) // Convert from px to pt
+                    val isVertical = cLabel.groupTextDirection.equals("vertical", ignoreCase = true)
+                    
+                    if (isVertical) {
+                        // 竪排模式：每個字符竪著排列，從右到左，從上到下
+                        val lines = preprocessedText.split('\n')
+                        val maxCharsPerColumn = 8 // 每列最多字符數
+                        val allColumns = mutableListOf<VBox>() // 收集所有列
+                        
+                        for (line in lines) {
+                            if (line.isEmpty()) continue
+                            
+                            // 將長行分割成多列
+                            val chunks = line.chunked(maxCharsPerColumn)
+                            
+                            for (chunk in chunks) {
+                                val columnBox = VBox().apply { spacing = 1.0 }
+                                
+                                // 在列開始添加透明的"一"來撐寬
+                                val topSpacer = Text("一").apply {
+                                    this.font = font
+                                    boundsType = TextBoundsType.VISUAL
+                                    fill = Color.TRANSPARENT // 透明色
+                                }
+                                columnBox.children.add(topSpacer)
+                                
+                                for (char in chunk) {
+                                    val displayChar = convertToVerticalChar(char)
+                                    val charText = Text(displayChar).apply {
+                                        this.font = font
+                                        boundsType = TextBoundsType.VISUAL
+                                        this.style = "-fx-text-alignment: center;"
+                                        fill = Color.WHITE    
+                                    }
+                                    columnBox.children.add(charText)
+                                }
+                                
+                                // 在列結束添加透明的"一"來撐寬
+                                val bottomSpacer = Text("一").apply {
+                                    this.font = font
+                                    boundsType = TextBoundsType.VISUAL
+                                    fill = Color.TRANSPARENT // 透明色
+                                }
+                                columnBox.children.add(bottomSpacer)
+                                
+                                allColumns.add(columnBox)
+                            }
+                        }
+                        
+                        // 從右到左添加列（反向遍歷）
+                        for (i in allColumns.size - 1 downTo 0) {
+                            placeholderContainer.children.add(allColumns[i])
+                        }
                     } else {
-                        rotate = 0.0
+                        // 橫排模式：正常橫向排列
+                        val textNode = Text(preprocessedText).apply {
+                            this.font = font
+                            boundsType = TextBoundsType.VISUAL
+                            fill = Color.WHITE
+                        }
+                        val textContainer = VBox(textNode)
+                        placeholderContainer.children.add(textContainer)
                     }
-                    // Always centered on the label's circle
-                    layoutXProperty().bind(cLabel.pickerRadiusProperty.subtract(widthProperty().divide(2)))
-                    layoutYProperty().bind(cLabel.pickerRadiusProperty.subtract(heightProperty().divide(2)))
                 }
                 
-                cLabel.translationOrientationProperty().addListener { _ -> updatePlaceholderLayout() }
-                updatePlaceholderLayout() // Initial setup
+                // 監聽變化並更新文字排列
+                cLabel.placeholderTextProperty().addListener { _ -> updatePlaceholderText() }
+                cLabel.groupFontSizeProperty.addListener { _ -> updatePlaceholderText() }
+                cLabel.groupTextDirectionProperty().addListener { _ -> updatePlaceholderText() }
+                
+                // 居中定位，覆蓋在Label上面（Z軸）
+                layoutXProperty().bind(cLabel.pickerRadiusProperty.subtract(widthProperty().divide(2)))
+                layoutYProperty().bind(cLabel.pickerRadiusProperty.subtract(heightProperty().divide(2)))
+                
+                // 初始更新
+                updatePlaceholderText()
             }
 
 
@@ -360,12 +446,12 @@ class CLabel(
                         offsetY = 0.0
                     }
                     clip.effect = glowEffect
-                    // Draw placeholderPane first, so it's in the background
-                    root.children.setAll(placeholderPane, text, clip, groupNamePane, auxiliaryPane)
+                    // 占位翻譯在最上層展示
+                    root.children.setAll(text, clip, groupNamePane, auxiliaryPane, placeholderPane)
                 } else {
                     clip.effect = null
-                    // Draw placeholderPane first, so it's in the background
-                    root.children.setAll(placeholderPane, text, clip, groupNamePane, auxiliaryPane)
+                    // 占位翻譯在最上層展示
+                    root.children.setAll(text, clip, groupNamePane, auxiliaryPane, placeholderPane)
                 }
 
 
@@ -376,6 +462,35 @@ class CLabel(
 
             // Manually update the first time
             updateListener.changed(null, null, null)
+        }
+
+        /**
+         * 將字符轉換為適合竪排顯示的字符
+         * 
+         * 📍 **修改位置說明**：
+         * 如需調整竪排字符替換規則，請修改此函數中的映射關係
+         */
+        private fun convertToVerticalChar(char: Char): String {
+            return when (char) {
+                // 省略號替換
+                '…' -> "︙"      // 竪排省略號
+                
+                // 處理雙省略號（……）
+                // 注意：這個需要在字符串處理層面預處理，這裡只處理單個字符
+                
+                // 括號替換
+                '(' -> "︵"      // 竪排左括號
+                ')' -> "︶"      // 竪排右括號
+                '（' -> "︵"      // 中文左括號
+                '）' -> "︶"      // 中文右括號
+                '—' -> "︱"      // 竪排長破折號
+                '―' -> "︱"      // 竪排全形破折號
+                // 引號替換（暫時移除，避免重複條件）
+                // '"' -> "﹁"   // 可根據需要添加其他引號處理
+                
+                // 其他字符保持原樣
+                else -> char.toString()
+            }
         }
 
         override fun getSkinnable(): CLabel = cLabel
@@ -395,6 +510,9 @@ class CLabel(
             text.layoutXProperty().unbind()
             text.layoutYProperty().unbind()
             root.children.remove(text)
+            
+            // 清理 placeholderContainer 中的所有子節點
+            placeholderContainer.children.clear()
 
             circle.radiusProperty().unbind()
             circle.centerXProperty().unbind()

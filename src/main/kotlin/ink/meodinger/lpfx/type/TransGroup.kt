@@ -23,10 +23,12 @@ import javafx.scene.paint.Color
 /**
  * A translation label group
  */
-@JsonIncludeProperties("name", "color")
+@JsonIncludeProperties("name", "color", "font-size", "text-direction")
 class TransGroup @JsonCreator constructor(
-    @JsonProperty("name")  name:     String = "NewGroup@${ACC++}",
-    @JsonProperty("color") colorHex: String = "66CCFF"
+    @JsonProperty("name") name: String = "NewGroup@${ACC++}",
+    @JsonProperty("color") colorHex: String = "66CCFF",
+    @JsonProperty("font-size") fontSize: Double? = null,
+    @JsonProperty("text-direction") textDirection: String? = null
 ) {
     companion object {
         private var ACC = 0
@@ -70,6 +72,23 @@ class TransGroup @JsonCreator constructor(
                 throw IllegalArgumentException(String.format(I18N["exception.trans_group.color_invalid.s"], value))
             colorHexProperty.set(value)
         }
+
+    private val fontSizeProperty = SimpleDoubleProperty(fontSize ?: -1.0)
+    fun fontSizeProperty(): DoubleProperty = fontSizeProperty
+    var fontSize: Double
+        @JsonGetter("font-size") get() = fontSizeProperty.get()
+        @JsonSetter("font-size") set(value) {
+            fontSizeProperty.set(value)
+        }
+
+    private val textDirectionProperty = SimpleStringProperty(textDirection ?: "horizontal")
+    fun textDirectionProperty(): StringProperty = textDirectionProperty
+    var textDirection: String
+        @JsonGetter("text-direction") get() = textDirectionProperty.get()
+        @JsonSetter("text-direction") set(value) {
+            textDirectionProperty.set(value)
+        }
+
 
     // endregion
 
