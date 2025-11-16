@@ -25,6 +25,7 @@ import javafx.animation.KeyValue
 import javafx.animation.Timeline
 import javafx.beans.binding.Bindings
 import javafx.beans.property.SimpleBooleanProperty
+import javafx.beans.property.SimpleDoubleProperty
 import javafx.beans.value.ChangeListener
 import javafx.collections.ListChangeListener
 import javafx.event.ActionEvent
@@ -32,6 +33,7 @@ import javafx.geometry.Insets
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
 import javafx.scene.control.*
+import javafx.scene.control.TextFormatter.Change
 import javafx.scene.image.ImageView
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCodeCombination
@@ -54,6 +56,8 @@ import java.nio.file.Path
 import java.util.stream.Collectors
 import kotlin.io.path.extension
 import kotlin.io.path.name
+import javafx.util.StringConverter
+import java.util.function.UnaryOperator
 
 
 /**
@@ -166,6 +170,11 @@ class View(private val state: State) : BorderPane() {
      */
     val isShowingAllTranslationsProperty = SimpleBooleanProperty(false)
     
+    /**
+     * Placeholder font size scale factor
+     */
+    private val placeholderFontSizeScaleProperty: SimpleDoubleProperty = SimpleDoubleProperty(1.0)
+
     /**
      * Public getter for showing all translations property
      */
@@ -344,7 +353,11 @@ class View(private val state: State) : BorderPane() {
                     disableProperty().bind(!state.openedProperty())
                 }
                 item("导出全部图片带标签") {
-                    does { exportAllPagesWithLabels() }
+                    does { exportAllLabeledPics() }
+                    disableProperty().bind(!state.openedProperty())
+                }
+                item("导出全部图片带辅助翻译") {
+                    does { exportAllPagesWithPlaceholderTranslation() }
                     disableProperty().bind(!state.openedProperty())
                 }
             }
@@ -423,8 +436,12 @@ class View(private val state: State) : BorderPane() {
                         labelSelectedStrokeProperty().bind(Settings.labelSelectedStrokeProperty())
                         newPictureScaleProperty().bind(Settings.newPictureScaleProperty())
                         useWheelToScaleProperty().bind(Settings.useWheelToScaleProperty())
+                        placeholderFontSizeScaleProperty().bind(placeholderFontSizeScaleProperty)
                     }
                     bottom(HBox()) {
+                        alignment = Pos.CENTER_LEFT
+                        spacing = 8.0
+                        padding = Insets(0.0, 8.0, 0.0, 8.0)
                         add(CTextSlider()) {
                             disableProperty().bind(cLabelPane.disableProperty())
                             initScaleProperty().bind(cLabelPane.initScaleProperty())
@@ -466,6 +483,22 @@ class View(private val state: State) : BorderPane() {
                                 } else {
                                     showAllTranslations()
                                 }
+                            }
+                        }
+                        add(Label("字體縮放:"))
+                        add(TextField()) {
+                            prefWidth = 50.0
+                            text = "1.0"
+                            val formatter = TextFormatter<String> { change ->
+                                if (change.controlNewText.matches(Regex("0|0\\.[0-9]*|[1-9][0-9]*\\.?[0-9]*"))) {
+                                    change
+                                } else {
+                                    null
+                                }
+                            }
+                            textFormatter = formatter
+                            textProperty().addListener { _, _, newValue ->
+                                placeholderFontSizeScaleProperty.set(newValue.toDoubleOrNull() ?: 0.5)
                             }
                         }
                     }
@@ -870,8 +903,14 @@ class View(private val state: State) : BorderPane() {
         state.controller.exportCurrentPageWithLabels()
     }
     
-    private fun exportAllPagesWithLabels() {
-        state.controller.exportAllPagesWithLabels()
+    private fun exportAllLabeledPics() {
+        state.controller.exportAllLabeledPics()
+    }
+
+    private fun exportAllPagesWithPlaceholderTranslation() {
+        val paneScale = cLabelPane.scale
+        val placeholderScale = cLabelPane.placeholderFontSizeScale
+        state.controller.exportAllPagesWithPlaceholderTranslation(paneScale, placeholderScale)
     }
 
     private fun settings() {

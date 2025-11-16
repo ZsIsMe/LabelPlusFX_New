@@ -404,6 +404,9 @@ class Controller(private val state: State) {
                     val selectedLabelIndices = cTreeView.getSelectedLabelIndices()
                     cLabelPane.updateLabelSelectionStates(selectedLabelIndices)
                     
+                    // 確保在選擇標籤後將焦點設置到CTreeView，以便F5等快捷鍵能夠正常工作
+                    cTreeView.requestFocus()
+                    
                     // Move to center if double-click
                     // if (it.sourceEvent.isDoubleClick) cLabelPane.moveToLabel(it.labelIndex)
                 }
@@ -705,7 +708,13 @@ class Controller(private val state: State) {
 
         // When LabelPane Box Selection
         cLabelPane.selectedLabelsProperty().addListener(SetChangeListener {
-            if (state.isOpened) cTreeView.selectLabels(it.set, clear = true, scrollTo = true)
+            if (state.isOpened) {
+                cTreeView.selectLabels(it.set, clear = true, scrollTo = true)
+                // 確保在框選標籤後將焦點設置到CTreeView，以便F5等快捷鍵能夠正常工作
+                if (it.set.isNotEmpty()) {
+                    cTreeView.requestFocus()
+                }
+            }
         })
         cLabelPane.addEventHandler(KeyEvent.KEY_PRESSED) handler@{
             if (cLabelPane.selectedLabels.isEmpty()) return@handler
@@ -1582,8 +1591,15 @@ class Controller(private val state: State) {
     /**
      * 导出全部图片带标签
      */
-    fun exportAllPagesWithLabels() {
+    fun exportAllLabeledPics() {
         LabeledImageExporter.exportAllPagesWithLabels(state)
+    }
+
+    /**
+     * 导出全部图片带辅助翻译
+     */
+    fun exportAllPagesWithPlaceholderTranslation(paneScale: Double, placeholderScale: Double) {
+        LabeledImageExporter.exportAllPagesWithPlaceholderTranslation(state, paneScale, placeholderScale)
     }
 
     /**

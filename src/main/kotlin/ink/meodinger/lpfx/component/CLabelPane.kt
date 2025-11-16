@@ -352,7 +352,7 @@ class CLabelPane(
     fun labelSelectedStrokeProperty(): BooleanProperty = labelSelectedStrokeProperty
     var isLabelSelectedStroke: Boolean by labelSelectedStrokeProperty
 
-    private val labelColorOpacityProperty: DoubleProperty = SimpleDoubleProperty(0.5)
+    private val labelColorOpacityProperty: DoubleProperty = SimpleDoubleProperty(1.0)
     fun labelColorOpacityProperty(): DoubleProperty = labelColorOpacityProperty
     var labelColorOpacity: Double by labelColorOpacityProperty
 
@@ -363,6 +363,10 @@ class CLabelPane(
     private val commonCursorProperty: ObjectProperty<Cursor> = SimpleObjectProperty(Cursor.DEFAULT)
     fun commonCursorProperty(): ObjectProperty<Cursor> = commonCursorProperty
     var commonCursor: Cursor by commonCursorProperty
+
+    private val placeholderFontSizeScaleProperty: DoubleProperty = SimpleDoubleProperty(1.0)
+    fun placeholderFontSizeScaleProperty(): DoubleProperty = placeholderFontSizeScaleProperty
+    var placeholderFontSizeScale: Double by placeholderFontSizeScaleProperty
 
     // endregion
 
@@ -670,12 +674,14 @@ class CLabelPane(
             auxiliaryTextProperty().bind(transLabel.textProperty())
             placeholderTextProperty().bind(transLabel.textProperty())
 
-            // Group-specific font size and text direction for placeholder
-            val group = state.transFile.groupList.getOrNull(transLabel.groupId)
-            if (group != null) {
-                groupFontSize = group.fontSize
-                groupTextDirection = group.textDirection
-            }
+            // Group-specific font size and text direction for placeholder - dynamically bind to group changes
+            groupFontSizeProperty().bind(transLabel.groupIdProperty().transform { groupId ->
+                state.transFile.groupList.getOrNull(groupId.toInt())?.fontSize ?: 18.0
+            })
+            groupTextDirectionProperty().bind(transLabel.groupIdProperty().transform { groupId ->
+                state.transFile.groupList.getOrNull(groupId.toInt())?.textDirection ?: "horizontal"
+            })
+            placeholderFontSizeScaleProperty().bind(placeholderFontSizeScaleProperty)
             
             // For now, let's make the placeholder always visible when the label is created
             isPlaceholderVisible = true
@@ -818,6 +824,7 @@ class CLabelPane(
         label.colorOpacityProperty().unbind()
         label.groupNameProperty().unbind()
         label.groupNameVisibleProperty().unbind()
+        label.placeholderFontSizeScaleProperty().unbind()
 
         // Remove view
         labelNodes.remove(label)
@@ -908,6 +915,8 @@ class CLabelPane(
             }
         }
         updateAuxiliaryTranslationsLayout()
+        // 強制重新渲染所有標籤的佔位翻譯佈局
+        refreshAllPlaceholderLayouts()
     }
 
     /**
@@ -918,6 +927,8 @@ class CLabelPane(
             label.isAuxiliaryVisible = false
             label.isPlaceholderVisible = false
         }
+        // 在隱藏時也刷新佈局，確保下次顯示時正確渲染
+        refreshAllPlaceholderLayouts()
     }
 
     private fun updateAuxiliaryTranslationsLayout() {
@@ -1037,6 +1048,15 @@ class CLabelPane(
             val isSelected = selectedIndices.contains(label.index)
             label.isSelected = isSelected
         }
+    }
+
+    /**
+     * 強制重新渲染所有標籤的佔位翻譯佈局
+     * 由於已經使用動態綁定，分組變化會自動觸發佈局更新，所以這個方法現在是空的
+     */
+    fun refreshAllPlaceholderLayouts() {
+        // 由於 groupFontSize 和 groupTextDirection 已經通過 bind() 動態綁定到分組變化，
+        // 不需要手動設置，動態綁定會自動處理分組變化時的屬性更新
     }
 
 }

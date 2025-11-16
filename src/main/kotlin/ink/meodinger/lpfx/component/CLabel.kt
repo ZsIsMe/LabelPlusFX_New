@@ -2,6 +2,7 @@ package ink.meodinger.lpfx.component
 
 import ink.meodinger.lpfx.Config.MonoFont
 import ink.meodinger.lpfx.util.color.opacity
+import ink.meodinger.lpfx.util.color.getContrastingTextColor
 import ink.meodinger.lpfx.util.property.*
 
 import javafx.beans.binding.Bindings
@@ -209,6 +210,10 @@ class CLabel(
     fun groupTextDirectionProperty(): StringProperty = groupTextDirectionProperty
     var groupTextDirection: String by groupTextDirectionProperty
 
+    private val placeholderFontSizeScaleProperty = SimpleDoubleProperty(1.0)
+    fun placeholderFontSizeScaleProperty(): DoubleProperty = placeholderFontSizeScaleProperty
+    var placeholderFontSizeScale: Double by placeholderFontSizeScaleProperty
+
 
     // endregion
 
@@ -287,11 +292,24 @@ class CLabel(
                 })
                 font = Font.font(12.0)
                 boundsType = TextBoundsType.VISUAL
+                
+                // 動態設置文字顏色，根據背景顏色自動選擇對比色
+                fillProperty().bind(cLabel.colorProperty().transform { groupColor ->
+                    groupColor.getContrastingTextColor()
+                })
             }
             groupNamePane.apply {
                 padding = Insets(2.0)
-                style = "-fx-background-color:lightgreen; -fx-background-radius: 4; -fx-border-color: lightgreen; -fx-border-width: 1; -fx-border-radius: 4;"
                 visibleProperty().bind(cLabel.groupNameVisibleProperty())
+                
+                // 動態設置背景顏色和邊框顏色為分組顏色
+                styleProperty().bind(cLabel.colorProperty().transform { groupColor ->
+                    val colorHex = String.format("#%02x%02x%02x", 
+                        (groupColor.red * 255).toInt(),
+                        (groupColor.green * 255).toInt(), 
+                        (groupColor.blue * 255).toInt())
+                    "-fx-background-color: $colorHex; -fx-background-radius: 4; -fx-border-color: $colorHex; -fx-border-width: 1; -fx-border-radius: 4;"
+                })
 
                 layoutXProperty().bind(cLabel.pickerRadiusProperty.subtract(widthProperty().divide(2)))
                 // 在占位翻譯的正下方，留10像素間隙
@@ -305,7 +323,7 @@ class CLabel(
             // Auxiliary Proofreading Translation (on the side)
             auxiliaryText.apply {
                 textProperty().bind(cLabel.auxiliaryTextProperty)
-                font = Font.font(18.0)
+                font = Font.font(27.0)
                 boundsType = TextBoundsType.VISUAL
                 fill = Color.WHITE
             }
@@ -334,32 +352,33 @@ class CLabel(
                 // 動態更新文字排列
                 fun updatePlaceholderText() {
                     placeholderContainer.children.clear()
-                    
-                    // 預處理文本：替換雙省略號
-                    val preprocessedText = cLabel.placeholderText
-                        .replace("……", "︙︙")  // 雙省略號替換為雙竪排省略號
-                    
-                    if (preprocessedText.isEmpty()) return
-                    
-                    val fontSize = if (cLabel.groupFontSize > 0) cLabel.groupFontSize else 18.0
-                    val font = Font.font(fontSize / 0.75) // Convert from px to pt
+
+                    val originalText = cLabel.placeholderText
+                    if (originalText.isEmpty()) return
+
+                    val fontSize = (if (cLabel.groupFontSize > 0) cLabel.groupFontSize else 27.0) * cLabel.placeholderFontSizeScale
+                    val font = Font.font(fontSize) // 
                     val isVertical = cLabel.groupTextDirection.equals("vertical", ignoreCase = true)
-                    
+
                     if (isVertical) {
+                        // 竪排模式：僅在竪排時進行文本替換
+                        val preprocessedText = originalText
+                            .replace("……", "︙︙") // 雙省略號替換為雙竪排省略號
+
                         // 竪排模式：每個字符竪著排列，從右到左，從上到下
                         val lines = preprocessedText.split('\n')
-                        val maxCharsPerColumn = 8 // 每列最多字符數
+                        val maxCharsPerColumn = 50 // 每列最多字符數
                         val allColumns = mutableListOf<VBox>() // 收集所有列
-                        
+
                         for (line in lines) {
                             if (line.isEmpty()) continue
-                            
+
                             // 將長行分割成多列
                             val chunks = line.chunked(maxCharsPerColumn)
-                            
+
                             for (chunk in chunks) {
                                 val columnBox = VBox().apply { spacing = 1.0 }
-                                
+
                                 // 在列開始添加透明的"一"來撐寬
                                 val topSpacer = Text("一").apply {
                                     this.font = font
@@ -367,17 +386,17 @@ class CLabel(
                                     fill = Color.TRANSPARENT // 透明色
                                 }
                                 columnBox.children.add(topSpacer)
-                                
+
                                 for (char in chunk) {
                                     val displayChar = convertToVerticalChar(char)
                                     val charText = Text(displayChar).apply {
                                         this.font = font
                                         boundsType = TextBoundsType.VISUAL
-                                        fill = Color.WHITE    
+                                        fill = Color.WHITE
                                     }
                                     columnBox.children.add(charText)
                                 }
-                                
+
                                 // 在列結束添加透明的"一"來撐寬
                                 val bottomSpacer = Text("一").apply {
                                     this.font = font
@@ -385,18 +404,18 @@ class CLabel(
                                     fill = Color.TRANSPARENT // 透明色
                                 }
                                 columnBox.children.add(bottomSpacer)
-                                
+
                                 allColumns.add(columnBox)
                             }
                         }
-                        
+
                         // 從右到左添加列（反向遍歷）
                         for (i in allColumns.size - 1 downTo 0) {
                             placeholderContainer.children.add(allColumns[i])
                         }
                     } else {
-                        // 橫排模式：正常橫向排列
-                        val textNode = Text(preprocessedText).apply {
+                        // 橫排模式：使用原始文本，不進行任何替換
+                        val textNode = Text(originalText).apply {
                             this.font = font
                             boundsType = TextBoundsType.VISUAL
                             fill = Color.WHITE
@@ -410,6 +429,7 @@ class CLabel(
                 cLabel.placeholderTextProperty().addListener { _ -> updatePlaceholderText() }
                 cLabel.groupFontSizeProperty.addListener { _ -> updatePlaceholderText() }
                 cLabel.groupTextDirectionProperty().addListener { _ -> updatePlaceholderText() }
+                cLabel.placeholderFontSizeScaleProperty.addListener { _ -> updatePlaceholderText() }
                 
                 // 居中定位，覆蓋在Label上面（Z軸）
                 layoutXProperty().bind(cLabel.pickerRadiusProperty.subtract(widthProperty().divide(2)))
